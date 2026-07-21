@@ -7,37 +7,45 @@ import (
 	"context"
 	"flag"
 	"log"
+	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
-	"github.com/hashicorp/terraform-provider-scaffolding-framework/internal/provider"
+	urlloprovider "github.com/wesleykirkland/terraform-provider-urllo/internal/provider"
 )
 
 var (
-	// these will be set by the goreleaser configuration
-	// to appropriate values for the compiled binary.
+	// version is set by the goreleaser configuration to appropriate values for
+	// the compiled binary. It is "dev" when built and run locally.
 	version string = "dev"
 
-	// goreleaser can pass other information to the main package, such as the specific commit
-	// https://goreleaser.com/cookbooks/using-main.version/
+	// serve is the provider server entrypoint, overridable in tests.
+	serve = providerserver.Serve
 )
 
 func main() {
-	var debug bool
+	mainWithExit(log.Fatal)
+}
 
-	flag.BoolVar(&debug, "debug", false, "set to true to run the provider with support for debuggers like delve")
-	flag.Parse()
+// mainWithExit runs the provider and reports a fatal error via onError, which is
+// injected so the error path is testable without terminating the process.
+func mainWithExit(onError func(...any)) {
+	if err := run(context.Background(), version, os.Args[1:]); err != nil {
+		onError(err.Error())
+	}
+}
+
+// run parses args and serves the provider. It returns any parse or serve error.
+func run(ctx context.Context, version string, args []string) error {
+	fs := flag.NewFlagSet("terraform-provider-urllo", flag.ContinueOnError)
+	debug := fs.Bool("debug", false, "set to true to run the provider with support for debuggers like delve")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
 
 	opts := providerserver.ServeOpts{
-		// TODO: Update this string with the published name of your provider.
-		// Also update the tfplugindocs generate command to either remove the
-		// -provider-name flag or set its value to the updated provider name.
-		Address: "registry.terraform.io/hashicorp/scaffolding",
-		Debug:   debug,
+		Address: "registry.terraform.io/wesleykirkland/urllo",
+		Debug:   *debug,
 	}
 
-	err := providerserver.Serve(context.Background(), provider.New(version), opts)
-
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	return serve(ctx, urlloprovider.New(version), opts)
 }

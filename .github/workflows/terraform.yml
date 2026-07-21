@@ -1,0 +1,183 @@
+# Terraform CI for the ./terraform example, adapted from
+# https://github.com/wesleykirkland/wesleyk.me/blob/main/.github/workflows/terraform.yml
+#
+# Flow: run all Go tests -> build the provider from source into a local
+# filesystem mirror (so `terraform init` resolves it without a registry) ->
+# terraform plan (and, on merge/label/dispatch, apply) via tf-via-pr, which
+# comments the plan on the PR.
+#
+# Required repository secrets:
+#   URLLO_API_KEY, URLLO_API_SECRET  - to plan/apply against a real account.
+#   TF_PLAN_PASSPHRASE (optional)     - encrypts the saved plan artifact.
+#
+# Note: the example uses local (ephemeral) state and only reads data sources, so
+# apply is a no-op today. Configure a remote backend before managing real
+# resources across runs.
+name: Terraform
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+      - 'internal/**'
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/terraform.yml'
+    types: [opened, synchronize, reopened, labeled] # label triggers a manual plan/apply
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+      - 'internal/**'
+      - '**/*.go'
+  workflow_dispatch:
+    inputs:
+      command:
+        description: TF command
+        required: true
+        type: choice
+        options:
+          - plan
+          - apply
+        default: plan
+
+permissions:
+  actions: read # identify workflow run
+  contents: read # checkout
+  issues: write # manage PR labels
+  pull-requests: write # PR comment
+  security-events: write # upload SARIF
+
+env:
+  TF_WORKING_DIR: ./terraform
+  PROVIDER_VERSION: 0.0.1
+
+jobs:
+  # Run the full Go test suite (unit + mock-backed acceptance) as a gate.
+  test:
+    name: Go tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_wrapper: false # needed by the mock acceptance tests
+          terraform_version: "~1.15"
+      - run: go vet ./...
+      - name: Run all tests
+        run: TF_ACC=1 go test -race -cover ./...
+
+  terraform:
+    name: Build provider & Terraform
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read # identify workflow run
+      checks: write # status summary
+      contents: read # checkout
+      issues: write # manage PR labels
+      pull-requests: write # PR comment
+      security-events: write # upload SARIF
+    # Skip labeled events that don't carry a TF label.
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      github.event.action != 'labeled' ||
+      contains(github.event.pull_request.labels.*.name, 'run-plan') ||
+      contains(github.event.pull_request.labels.*.name, 'run-apply')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_wrapper: false # needed by tf-via-pr for detailed exit codes
+          terraform_version: "~1.15"
+      
+      # Build the provider from source into Terraform's implied local mirror and
+      # write a CLI config so init resolves it from there (never the registry).
+      - name: Build provider into local mirror
+        run: |
+          ./terraform/build-local.sh "${PROVIDER_VERSION}"
+          printf 'provider_installation {\n  filesystem_mirror {\n    path    = "%s/.terraform.d/plugins"\n    include = ["registry.terraform.io/wesleykirkland/urllo"]\n  }\n  direct {\n    exclude = ["registry.terraform.io/wesleykirkland/urllo"]\n  }\n}\n' "$HOME" > "$RUNNER_TEMP/mirror.tfrc"
+          echo "TF_CLI_CONFIG_FILE=$RUNNER_TEMP/mirror.tfrc" >> "$GITHUB_ENV"
+
+      # Security scanning — runs on every event except label-only triggers.
+      - name: Run Checkov
+        if: github.event.action != 'labeled'
+        uses: bridgecrewio/checkov-action@99bb2caf247dfd9f03cf984373bc6043d4e32ebf # v12.1347.0
+        with:
+          directory: ${{ env.TF_WORKING_DIR }}
+          framework: terraform
+          output_format: sarif
+          output_file_path: terraform-checkov.sarif
+        continue-on-error: true
+
+      - name: Upload Checkov results
+        if: github.event.action != 'labeled' && always() && hashFiles('terraform-checkov.sarif') != ''
+        uses: github/codeql-action/upload-sarif@e0647621c2984b5ed2f768cb892365bf2a616ad1 # v4
+        with:
+          sarif_file: terraform-checkov.sarif
+        continue-on-error: true
+
+      - name: Run tfsec
+        if: github.event.action != 'labeled'
+        uses: aquasecurity/tfsec-action@b466648d6e39e7c75324f25d83891162a721f2d6 # v1.0.3
+        with:
+          working_directory: ${{ env.TF_WORKING_DIR }}
+          soft_fail: true
+        continue-on-error: true
+
+      # Plan on PR; apply on merge to main, the run-apply label, or dispatch.
+      - name: Provision TF
+        uses: op5dev/tf-via-pr@39ed2635c056ca408ed24cc5c2baf0ef4381a7a5 # v13
+        env:
+          TF_IN_AUTOMATION: true
+          TF_LOG: ERROR
+          URLLO_API_KEY: ${{ secrets.URLLO_API_KEY }}
+          URLLO_API_SECRET: ${{ secrets.URLLO_API_SECRET }}
+        with:
+          working-directory: ${{ env.TF_WORKING_DIR }}
+          command: >-
+            ${{ inputs.command ||
+                (github.event_name == 'push' && 'apply') ||
+                (contains(github.event.pull_request.labels.*.name, 'run-apply') && 'apply') ||
+                'plan' }}
+          arg-lock: >-
+            ${{ inputs.command == 'apply' ||
+                github.event_name == 'push' ||
+                contains(github.event.pull_request.labels.*.name, 'run-apply') }}
+          plan-encrypt: ${{ secrets.TF_PLAN_PASSPHRASE }}
+          validate: true
+          format: true
+          expand-diff: true
+          comment-pr: always
+          retention-days: 30
+
+      - name: Remove label
+        if: |
+          always() && (
+            contains(github.event.pull_request.labels.*.name, 'run-plan') ||
+            contains(github.event.pull_request.labels.*.name, 'run-apply')
+          )
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.number }}
+          PR_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'run-plan') && 'run-plan' || 'run-apply' }}
+        run: gh api /repos/{owner}/{repo}/issues/${PR_NUMBER}/labels/${PR_LABEL} --method DELETE

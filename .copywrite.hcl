@@ -3,7 +3,7 @@ schema_version = 1
 
 project {
   license        = "MPL-2.0"
-  copyright_year = 2021
+  copyright_year = 2026
 
   header_ignore = [
     # internal catalog metadata (prose)
@@ -11,6 +11,9 @@ project {
 
     # examples used within documentation (prose)
     "examples/**",
+
+    # runnable local-build example (HCL/shell, not part of the licensed provider)
+    "terraform/**",
 
     # GitHub issue template configuration
     ".github/ISSUE_TEMPLATE/*.yml",

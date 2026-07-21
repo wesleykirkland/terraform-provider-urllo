@@ -1,0 +1,104 @@
+# Automatic semantic releases.
+#
+# On every push to main this computes the next version from the Conventional
+# Commit history (fix -> patch, feat -> minor, "BREAKING CHANGE" / "!" -> major).
+# When a release is warranted it:
+#   1. Generates the changelog entry for the unreleased commits with git-cliff
+#      and prepends it to CHANGELOG.md.
+#   2. Commits that file to main (as wesleykirkland-release-bot[bot]).
+#   3. Tags that commit vX.Y.Z and pushes the tag.
+# Pushing the tag triggers the existing GoReleaser workflow (release.yml), which
+# builds and publishes the signed provider artifacts and (via .goreleaser.yml's
+# changelog config) writes the same grouped notes to the GitHub Release body.
+#
+# The chore(release) commit itself does not trigger another release: it carries
+# no feat:/fix:/! marker, so the next dry run computes no bump and the job
+# no-ops. The `concurrency` group below serializes runs so that re-trigger
+# always sees the tag/commit the previous run just pushed.
+#
+# Auth: this workflow mints its own token from the "wesleykirkland-release-bot"
+# GitHub App (id: see APP_ID secret) rather than using a PAT. Two things a
+# plain GITHUB_TOKEN can't do, which is why the App exists:
+#   1. Tags/commits pushed with the default GITHUB_TOKEN do not trigger other
+#      workflows, so release.yml (tag-triggered) would never run.
+#   2. main is protected by a repository ruleset requiring PRs. The ruleset's
+#      bypass_actors list explicitly allows this App (Integration, always) to
+#      push directly, so the changelog commit + tag succeed without a PR.
+#
+# Required secrets:
+#   CLIENT_ID       - the GitHub App's client ID (used to mint the token).
+#   APP_ID          - the GitHub App's numeric ID (used only for the bot
+#                      commit author's noreply email address).
+#   APP_PRIVATE_KEY - the App's private key (PEM).
+name: Semantic Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# No repo-level permissions needed for GITHUB_TOKEN: every step below acts
+# with the token minted from the GitHub App, scoped down below.
+permissions: {}
+
+# Avoid overlapping release runs.
+concurrency:
+  group: semantic-release
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: Tag next version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate App token
+        id: app_token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          # Cap the minted token to exactly what this job does, independent of
+          # whatever permissions the App itself is granted at the install level.
+          permission-contents: write
+
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app_token.outputs.token }}
+
+      # Computes the next semver from Conventional Commits without tagging yet,
+      # so the changelog can be committed before the tag is created.
+      - name: Compute next version
+        id: version
+        uses: mathieudutour/github-tag-action@a22cf08638b34d5badda920f9daf6e72c477b07b # v6.2
+        with:
+          github_token: ${{ steps.app_token.outputs.token }}
+          release_branches: main
+          default_bump: false # only release when commits warrant it
+          tag_prefix: v
+          dry_run: true
+
+      - name: Generate changelog
+        if: steps.version.outputs.new_tag != ''
+        uses: orhun/git-cliff-action@f50e11560dce63f7c33227798f90b924471a88b5 # v4.8.0
+        with:
+          config: cliff.toml
+          args: --tag ${{ steps.version.outputs.new_tag }} --unreleased --prepend CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ steps.app_token.outputs.token }}
+
+      - name: Commit changelog
+        if: steps.version.outputs.new_tag != ''
+        run: |
+          git config user.name "${{ steps.app_token.outputs.app-slug }}[bot]"
+          git config user.email "${{ secrets.APP_ID }}+${{ steps.app_token.outputs.app-slug }}[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "chore(release): ${{ steps.version.outputs.new_tag }}"
+          git push origin HEAD:main
+
+      - name: Tag release
+        if: steps.version.outputs.new_tag != ''
+        run: |
+          git tag "${{ steps.version.outputs.new_tag }}"
+          git push origin "${{ steps.version.outputs.new_tag }}"

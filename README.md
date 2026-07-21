@@ -1,64 +1,113 @@
-# Terraform Provider Scaffolding (Terraform Plugin Framework)
+# Terraform Provider for Urllo
 
-_This template repository is built on the [Terraform Plugin Framework](https://github.com/hashicorp/terraform-plugin-framework). The template repository built on the [Terraform Plugin SDK](https://github.com/hashicorp/terraform-plugin-sdk) can be found at [terraform-provider-scaffolding](https://github.com/hashicorp/terraform-provider-scaffolding). See [Which SDK Should I Use?](https://developer.hashicorp.com/terraform/plugin/framework-benefits) in the Terraform documentation for additional information._
+A [Terraform](https://www.terraform.io) provider for the [Urllo](https://urllo.com)
+redirection service, built on the [Terraform Plugin Framework](https://github.com/hashicorp/terraform-plugin-framework).
 
-This repository is a *template* for a [Terraform](https://www.terraform.io) provider. It is intended as a starting point for creating Terraform providers, containing:
+It covers the entire Urllo API:
 
-- A resource and a data source (`internal/provider/`),
-- Examples (`examples/`) and generated documentation (`docs/`),
-- Miscellaneous meta files.
-
-These files contain boilerplate code that you will need to edit to create your own Terraform provider. Tutorials for creating Terraform providers can be found on the [HashiCorp Developer](https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework) platform. _Terraform Plugin Framework specific guides are titled accordingly._
-
-Please see the [GitHub template repository documentation](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template) for how to create a new repository from this template on GitHub.
-
-Once you've written your provider, you'll want to [publish it on the Terraform Registry](https://developer.hashicorp.com/terraform/registry/providers/publishing) so that others can use it.
+| Family | Terraform |
+| ------ | --------- |
+| Rules  | `urllo_rule` resource, `urllo_rule` / `urllo_rules` data sources |
+| Hosts  | `urllo_host` resource, `urllo_host` / `urllo_hosts` data sources |
 
 ## Requirements
 
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.24
-
-## Building the Provider
-
-1. Clone the repository
-1. Enter the repository directory
-1. Build the provider using the Go `install` command:
-
-```shell
-go install
-```
-
-## Adding Dependencies
-
-This provider uses [Go modules](https://github.com/golang/go/wiki/Modules).
-Please see the Go documentation for the most up to date information about using Go modules.
-
-To add a new dependency `github.com/author/dependency` to your Terraform provider:
-
-```shell
-go get github.com/author/dependency
-go mod tidy
-```
-
-Then commit the changes to `go.mod` and `go.sum`.
+- [Go](https://golang.org/doc/install) >= 1.24 (to build)
 
 ## Using the Provider
 
-Fill this in for each provider
+```hcl
+terraform {
+  required_providers {
+    urllo = {
+      source = "wesleykirkland/urllo"
+    }
+  }
+}
+
+provider "urllo" {
+  api_key    = var.urllo_api_key    # or URLLO_API_KEY
+  api_secret = var.urllo_api_secret # or URLLO_API_SECRET
+  # endpoint = "https://api.urllo.com/v1"  # or URLLO_ENDPOINT (default shown)
+}
+
+resource "urllo_rule" "marketing" {
+  source_urls = ["example.com", "www.example.com"]
+  target_url  = "https://www.newsite.com"
+}
+```
+
+### Configuration
+
+Every provider setting can be supplied in HCL or via an environment variable.
+Explicit HCL values take precedence over environment variables.
+
+| Setting      | Argument     | Environment variable | Default                    |
+| ------------ | ------------ | -------------------- | -------------------------- |
+| API key      | `api_key`    | `URLLO_API_KEY`      | —                          |
+| API secret   | `api_secret` | `URLLO_API_SECRET`   | —                          |
+| API endpoint | `endpoint`   | `URLLO_ENDPOINT`     | `https://api.urllo.com/v1` |
+
+Authentication uses HTTP Basic auth (API key as username, API secret as password).
+The client automatically retries rate-limited (`429`) and `5xx` responses with
+backoff, and sends an `Idempotency-Key` on every write.
+
+### DNS validation for rules
+
+Like `aws_acm_certificate_validation`, `urllo_rule` can wait until each source
+host's DNS resolves to the values Urllo requires before completing. This is
+enabled by default; disable it with `validate_dns = false` (for example, before
+you have cut DNS over):
+
+```hcl
+resource "urllo_rule" "example" {
+  source_urls          = ["example.com"]
+  target_url           = "https://dest.com"
+  validate_dns         = true    # default
+  validate_dns_timeout = "5m"    # default
+}
+```
 
 ## Developing the Provider
 
-If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (see [Requirements](#requirements) above).
-
-To compile the provider, run `go install`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
-
-To generate or update documentation, run `make generate`.
-
-In order to run the full suite of Acceptance tests, run `make testacc`.
-
-*Note:* Acceptance tests create real resources, and often cost money to run.
+Requires [Go](http://www.golang.org). To build the provider and run it locally
+against a real account without publishing to a registry, see
+[`terraform/`](terraform/) for a ready-to-run dev-override example.
 
 ```shell
-make testacc
+go install                 # build & install the provider binary
+make test                  # unit tests (no credentials required)
+make lint                  # golangci-lint
+make generate              # regenerate docs (requires terraform)
+make testacc               # acceptance tests (see below)
 ```
+
+### Acceptance tests
+
+Acceptance tests run through the real Terraform plugin protocol and are gated
+behind `TF_ACC`. There are two flavours:
+
+- **Mock-backed** (`TestAccMock*`) run the full provider CRUD against an
+  in-memory Urllo API. They need **no credentials** and never touch your
+  account, so CI runs them on every push. Just:
+
+  ```shell
+  TF_ACC=1 go test ./internal/provider/ -run TestAccMock
+  ```
+
+- **Live** tests create real resources against a Urllo account and additionally
+  require credentials and a domain your account controls:
+
+  ```shell
+  export TF_ACC=1
+  export URLLO_API_KEY=...
+  export URLLO_API_SECRET=...
+  export URLLO_TEST_DOMAIN=unleashthe.cloud   # rules are created on subdomains of this
+  export URLLO_TEST_HOST=urllo.unleashthe.cloud  # optional: an existing host to manage
+  make testacc
+  ```
+
+Live tests skip themselves when their required variables are absent. Note that
+`TF_ACC` only needs to be **non-empty** to enable acceptance tests — `TF_ACC=0`
+still enables them; unset the variable to disable.
