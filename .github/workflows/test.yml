@@ -40,6 +40,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # SonarCloud needs full history for SCM blame / new-code analysis.
+          fetch-depth: 0
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: 'go.mod'
@@ -57,6 +60,13 @@ jobs:
       # credentials, so this covers the full CRUD path. See COVERAGE.md.
       - name: coverage gate
         run: make cover
+      # Feeds coverage.out (written by `make cover` above) to SonarCloud so
+      # the "SonarCloud Code Analysis" check posts on the PR.
+      - name: SonarCloud scan
+        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
 
   generate:
     runs-on: ubuntu-latest
