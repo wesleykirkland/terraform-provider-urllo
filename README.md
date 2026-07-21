@@ -71,7 +71,9 @@ resource "urllo_rule" "example" {
 
 ## Developing the Provider
 
-Requires [Go](http://www.golang.org).
+Requires [Go](http://www.golang.org). To build the provider and run it locally
+against a real account without publishing to a registry, see
+[`terraform/`](terraform/) for a ready-to-run dev-override example.
 
 ```shell
 go install                 # build & install the provider binary
