@@ -47,7 +47,6 @@ on:
 
 permissions:
   actions: read # identify workflow run
-  checks: write # status summary
   contents: read # checkout
   issues: write # manage PR labels
   pull-requests: write # PR comment
@@ -80,6 +79,13 @@ jobs:
     name: Build provider & Terraform
     needs: test
     runs-on: ubuntu-latest
+    permissions:
+      actions: read # identify workflow run
+      checks: write # status summary
+      contents: read # checkout
+      issues: write # manage PR labels
+      pull-requests: write # PR comment
+      security-events: write # upload SARIF
     # Skip labeled events that don't carry a TF label.
     if: >-
       github.event_name == 'push' ||
