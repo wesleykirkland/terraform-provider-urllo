@@ -1,0 +1,48 @@
+# Automatic semantic releases.
+#
+# On every push to main this computes the next version from the Conventional
+# Commit history (fix -> patch, feat -> minor, "BREAKING CHANGE" / "!" -> major)
+# and, when a release is warranted, creates and pushes a matching `vX.Y.Z` tag.
+# Pushing that tag triggers the existing GoReleaser workflow (release.yml), which
+# builds and publishes the signed provider artifacts.
+#
+# Required secret:
+#   RELEASE_TOKEN - a fine-grained PAT (or classic token) with `contents: write`.
+#     A token is required because tags created with the default GITHUB_TOKEN do
+#     NOT trigger other workflows, so release.yml would never run. Without it the
+#     job falls back to GITHUB_TOKEN and only tags (no downstream release).
+name: Semantic Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Avoid overlapping release runs.
+concurrency:
+  group: semantic-release
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: Tag next version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      # Computes the next semver from Conventional Commits and creates the tag.
+      # It does not create a GitHub release, so GoReleaser (release.yml) remains
+      # the single source of published artifacts. Consider SHA-pinning.
+      - name: Create release tag
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          release_branches: main
+          default_bump: false # only tag when commits warrant a release
+          tag_prefix: v
