@@ -82,13 +82,26 @@ func (c *Client) ListRules(ctx context.Context, opts ListRulesOptions) ([]Rule, 
 	return all, nil
 }
 
-// GetRule fetches a single rule by ID.
+// GetRule fetches a single rule by ID, or returns (nil, nil) if no rule with
+// that ID exists.
+//
+// This deliberately does not call GET /rules/{id}: on the live API that path
+// shape is served by CloudFront, which returns a stale cached 404 for every
+// rule ID (confirmed against real, existing rules), not just missing ones.
+// Using that endpoint would make Read() think every rule had been deleted
+// out-of-band and recreate it on every apply. Listing and filtering
+// client-side avoids the broken route entirely.
 func (c *Client) GetRule(ctx context.Context, id string) (*Rule, error) {
-	var env singleEnvelope[Rule]
-	if err := c.do(ctx, http.MethodGet, "/rules/"+url.PathEscape(id), nil, &env, nil); err != nil {
+	rules, err := c.ListRules(ctx, ListRulesOptions{})
+	if err != nil {
 		return nil, err
 	}
-	return &env.Data, nil
+	for i := range rules {
+		if rules[i].ID == id {
+			return &rules[i], nil
+		}
+	}
+	return nil, nil
 }
 
 // CreateRule creates a new redirect rule.

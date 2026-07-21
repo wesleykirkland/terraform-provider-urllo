@@ -33,7 +33,7 @@ func TestBasicAuthHeader(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotUser, gotPass, ok = r.BasicAuth()
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `{"data":{"id":"r1","type":"rule","attributes":{}}}`)
+		fmt.Fprint(w, `{"data":[{"id":"r1","type":"rule","attributes":{}}],"meta":{"has_more":false},"links":{"next":null}}`)
 	}))
 	defer srv.Close()
 
@@ -48,12 +48,16 @@ func TestBasicAuthHeader(t *testing.T) {
 
 func TestGetRuleDecodesEnvelope(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/rules/abc" {
+		// GetRule must not hit /rules/{id}: on the live API that path is served
+		// by CloudFront, which returns a stale cached 404 regardless of whether
+		// the rule exists. It lists instead and filters client-side.
+		if r.URL.Path != "/rules" {
 			t.Errorf("path = %q", r.URL.Path)
 		}
-		fmt.Fprint(w, `{"data":{"id":"abc","type":"rule","attributes":{
+		fmt.Fprint(w, `{"data":[{"id":"abc","type":"rule","attributes":{
 			"target_url":"dest.com","response_type":"found","forward_params":true,
-			"source_urls":["a.com","b.com"],"tags":["t1"]}}}`)
+			"source_urls":["a.com","b.com"],"tags":["t1"]}}],
+			"meta":{"has_more":false},"links":{"next":null}}`)
 	}))
 	defer srv.Close()
 
@@ -66,6 +70,22 @@ func TestGetRuleDecodesEnvelope(t *testing.T) {
 	}
 	if len(rule.Attributes.SourceURLs) != 2 || !rule.Attributes.ForwardParams {
 		t.Fatalf("unexpected attributes: %+v", rule.Attributes)
+	}
+}
+
+func TestGetRuleReturnsNilWhenMissing(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"data":[{"id":"other","type":"rule","attributes":{}}],
+			"meta":{"has_more":false},"links":{"next":null}}`)
+	}))
+	defer srv.Close()
+
+	rule, err := newTestClient(srv).GetRule(context.Background(), "abc")
+	if err != nil {
+		t.Fatalf("GetRule: %v", err)
+	}
+	if rule != nil {
+		t.Fatalf("expected nil rule, got %+v", rule)
 	}
 }
 
@@ -178,6 +198,8 @@ func TestIdempotencyKeyOnWrites(t *testing.T) {
 			patchKey = r.Header.Get("Idempotency-Key")
 		case http.MethodGet:
 			getKey = r.Header.Get("Idempotency-Key")
+			fmt.Fprint(w, `{"data":[{"id":"r1","type":"rule","attributes":{}}],"meta":{"has_more":false},"links":{"next":null}}`)
+			return
 		}
 		fmt.Fprint(w, `{"data":{"id":"r1","type":"rule","attributes":{}}}`)
 	}))
@@ -214,7 +236,7 @@ func TestRetriesOnRateLimit(t *testing.T) {
 			fmt.Fprint(w, `{"message":"slow down"}`)
 			return
 		}
-		fmt.Fprint(w, `{"data":{"id":"r1","type":"rule","attributes":{}}}`)
+		fmt.Fprint(w, `{"data":[{"id":"r1","type":"rule","attributes":{}}],"meta":{"has_more":false},"links":{"next":null}}`)
 	}))
 	defer srv.Close()
 

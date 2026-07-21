@@ -184,11 +184,11 @@ func (r *RuleResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	rule, err := r.client.GetRule(ctx, data.ID.ValueString())
 	if err != nil {
-		if client.IsNotFound(err) {
-			resp.State.RemoveResource(ctx)
-			return
-		}
 		resp.Diagnostics.AddError("Error reading rule", err.Error())
+		return
+	}
+	if rule == nil {
+		resp.State.RemoveResource(ctx)
 		return
 	}
 

@@ -5,6 +5,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -94,6 +95,10 @@ func (d *RuleDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	rule, err := d.client.GetRule(ctx, data.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading rule", err.Error())
+		return
+	}
+	if rule == nil {
+		resp.Diagnostics.AddError("Rule not found", fmt.Sprintf("No rule with id %q was found.", data.ID.ValueString()))
 		return
 	}
 
