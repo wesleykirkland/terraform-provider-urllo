@@ -8,13 +8,17 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
 	"github.com/wesleykirkland/terraform-provider-urllo/internal/client"
 )
@@ -200,6 +204,78 @@ func TestMaybeValidateDNS(t *testing.T) {
 	}, &d2)
 	if !d2.HasError() {
 		t.Error("invalid timeout should error")
+	}
+}
+
+// TestCreateRollsBackOnDNSTimeout drives the full Create() method against a
+// mock API and a resolver that never matches, so DNS validation always times
+// out. It asserts the created rule is deleted and no state is saved, so a
+// failed apply neither orphans a live rule nor gets recreated as a duplicate
+// on the next apply.
+func TestCreateRollsBackOnDNSTimeout(t *testing.T) {
+	orig := dnsPollInterval
+	dnsPollInterval = time.Millisecond
+	defer func() { dnsPollInterval = orig }()
+
+	var created, deleted atomic.Bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/rules":
+			created.Store(true)
+			_, _ = w.Write([]byte(`{"data":{"id":"r1","type":"rule","attributes":{
+				"target_url":"https://dest.example.com","response_type":"moved_permanently",
+				"source_urls":["go.example.com"]}}}`))
+		case r.Method == http.MethodDelete && r.URL.Path == "/rules/r1":
+			deleted.Store(true)
+			w.WriteHeader(http.StatusNoContent)
+		case r.URL.Path == "/hosts":
+			_, _ = w.Write([]byte(`{"data":[{"id":"h1","type":"host","attributes":{"name":"go.example.com"}}],
+				"links":{"next":null}}`))
+		case r.URL.Path == "/hosts/h1":
+			_, _ = w.Write([]byte(`{"data":{"id":"h1","type":"host","attributes":{
+				"name":"go.example.com","required_dns_entries":{"recommended":{"type":"A","values":["203.0.113.1"]}}}}}`))
+		default:
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	r := &RuleResource{
+		client:   client.New(srv.URL, "k", "s", client.WithHTTPClient(srv.Client())),
+		resolver: fakeResolver{hosts: map[string][]string{"go.example.com": {"10.0.0.1"}}}, // never matches 203.0.113.1
+	}
+
+	ctx := context.Background()
+	var sr resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &sr)
+	objType := sr.Schema.Type().TerraformType(ctx)
+
+	raw := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                   tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"source_urls":          tftypes.NewValue(tftypes.Set{ElementType: tftypes.String}, []tftypes.Value{tftypes.NewValue(tftypes.String, "go.example.com")}),
+		"target_url":           tftypes.NewValue(tftypes.String, "https://dest.example.com"),
+		"response_type":        tftypes.NewValue(tftypes.String, "moved_permanently"),
+		"forward_params":       tftypes.NewValue(tftypes.Bool, false),
+		"forward_path":         tftypes.NewValue(tftypes.Bool, false),
+		"tags":                 tftypes.NewValue(tftypes.Set{ElementType: tftypes.String}, nil),
+		"validate_dns":         tftypes.NewValue(tftypes.Bool, true),
+		"validate_dns_timeout": tftypes.NewValue(tftypes.String, "5ms"),
+	})
+
+	createResp := &resource.CreateResponse{}
+	r.Create(ctx, resource.CreateRequest{Plan: tfsdk.Plan{Schema: sr.Schema, Raw: raw}}, createResp)
+
+	if !createResp.Diagnostics.HasError() {
+		t.Fatal("expected a DNS validation timeout error")
+	}
+	if !created.Load() {
+		t.Fatal("expected CreateRule to have been called")
+	}
+	if !deleted.Load() {
+		t.Fatal("expected the created rule to be rolled back with DeleteRule")
+	}
+	if !createResp.State.Raw.IsNull() {
+		t.Fatalf("expected no state to be saved after rollback, got %v", createResp.State.Raw)
 	}
 }
 

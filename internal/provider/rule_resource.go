@@ -169,6 +169,17 @@ func (r *RuleResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	r.maybeValidateDNS(ctx, &data, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
+		// DNS never validated, so don't leave the rule live-but-untracked: an
+		// unset state here would make Terraform call CreateRule again next
+		// apply, piling up duplicate rules on every failed retry. Delete what
+		// was created and leave state unset, so re-running apply from a clean
+		// slate is the only way forward.
+		if delErr := r.client.DeleteRule(ctx, rule.ID); delErr != nil {
+			resp.Diagnostics.AddWarning("Error cleaning up rule after failed DNS validation",
+				fmt.Sprintf("Rule %q was created but failed DNS validation, and could not be automatically "+
+					"deleted: %s. Delete it manually via the Urllo dashboard or API before retrying.",
+					rule.ID, delErr))
+		}
 		return
 	}
 
