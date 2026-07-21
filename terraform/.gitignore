@@ -1,5 +1,9 @@
-# Local dev-override CLI config (contains a machine-specific path).
+# Local CLI configs (contain machine-specific paths).
 dev.tfrc
+mirror.tfrc
+
+# Repo-local provider mirror (see build-local.sh TF_PLUGIN_MIRROR).
+.terraform-mirror/
 
 # Terraform working files.
 .terraform/

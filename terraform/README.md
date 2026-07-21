@@ -1,70 +1,82 @@
-# Running the Urllo provider locally
+# Running the Urllo provider from a local build
 
-This directory is a self-contained example for building the provider from source
-and running it with Terraform **without publishing it to a registry**, using
-Terraform's [development overrides](https://developer.hashicorp.com/terraform/cli/config/config-file#development-overrides-for-provider-developers).
+This directory builds the provider from source and runs it with Terraform
+**without publishing it to a registry**. There are two ways to do that; pick
+based on whether you need `terraform init` to work.
 
-## 1. Build & install the provider
+| Approach | `terraform init` | Best for |
+| --- | --- | --- |
+| **Filesystem mirror** (below) | ✅ works | CI, anything that runs `init` |
+| **Dev overrides** (further down) | ❌ skipped | fast local iteration |
 
-From the repository root:
+> `terraform init` **always** contacts the registry and **ignores** dev
+> overrides, so an unpublished provider fails `init` with "registry ... does not
+> have a provider named ...". The filesystem mirror fixes that.
 
-```shell
-go install .
-```
+## Filesystem mirror (works with `terraform init`)
 
-This compiles the provider and places the `terraform-provider-urllo` binary in
-your `GOPATH/bin` (equivalent to `make install`). Confirm the location:
-
-```shell
-go env GOPATH   # the binary is in <GOPATH>/bin
-```
-
-## 2. Point Terraform at the local build
-
-Copy the example CLI config and set the path to your `GOPATH/bin`:
+### 1. Build into a local mirror
 
 ```shell
-cd terraform
-cp dev.tfrc.example dev.tfrc
-# Edit dev.tfrc: replace /Users/CHANGE_ME/go/bin with "$(go env GOPATH)/bin".
+./build-local.sh            # installs v0.0.1 into ~/.terraform.d/plugins
 ```
 
-Or generate it in one line (macOS/Linux):
+`~/.terraform.d/plugins` is Terraform's *implied local mirror*, which `init`
+searches automatically — so no extra CLI config is needed. Rebuild with the same
+command after code changes.
 
-```shell
-printf 'provider_installation {\n  dev_overrides {\n    "registry.terraform.io/wesleykirkland/urllo" = "%s/bin"\n  }\n  direct {}\n}\n' "$(go env GOPATH)" > dev.tfrc
-```
-
-With a dev override in effect you **do not** (and must not) run
-`terraform init` — Terraform uses the binary directly.
-
-## 3. Provide credentials
+### 2. Init, validate, plan
 
 ```shell
 export URLLO_API_KEY=...
 export URLLO_API_SECRET=...
-# Optional: point at a non-default API base URL.
-# export URLLO_ENDPOINT=https://api.urllo.com/v1
+
+terraform init       # resolves urllo from the local mirror, no registry
+terraform validate   # no credentials needed
+terraform plan       # reads your hosts and rules
 ```
 
-## 4. Run it
+### CI usage
+
+In CI, install into a repo-local mirror and point Terraform at it explicitly so
+other providers still resolve from the registry:
 
 ```shell
-# Validate the config against the live provider schema (no credentials/API needed):
-TF_CLI_CONFIG_FILE=./dev.tfrc terraform validate
+export TF_PLUGIN_MIRROR="$PWD/.terraform-mirror"
+./terraform/build-local.sh                 # builds for the runner's OS/arch
+cp terraform/mirror.tfrc.example mirror.tfrc
+# set path in mirror.tfrc to "$TF_PLUGIN_MIRROR"
+export TF_CLI_CONFIG_FILE="$PWD/mirror.tfrc"
+terraform -chdir=terraform init
+terraform -chdir=terraform plan
+```
 
-# Plan against your real account (reads hosts and rules):
+The mirror only holds one platform's binary; if your CI matrix spans platforms,
+run `build-local.sh` on each, or `terraform providers lock -platform=...` to add
+checksums.
+
+## Dev overrides (fast iteration, no `init`)
+
+For a quick edit-build-run loop where you don't want to reinstall into a mirror:
+
+```shell
+go install .                                   # from the repo root
+cd terraform
+printf 'provider_installation {\n  dev_overrides {\n    "registry.terraform.io/wesleykirkland/urllo" = "%s/bin"\n  }\n  direct {}\n}\n' "$(go env GOPATH)" > dev.tfrc
+
+# Do NOT run `terraform init` with a dev override in effect.
+TF_CLI_CONFIG_FILE=./dev.tfrc terraform validate
 TF_CLI_CONFIG_FILE=./dev.tfrc terraform plan
 ```
 
-You should see your account's hosts in the `host_names` output and a
-`rule_count`. Uncomment the `urllo_rule` resource in `main.tf` to create a real
-redirect, then `terraform apply` / `terraform destroy`.
+`dev.tfrc` and the `.terraform*` working files are gitignored. `dev.tfrc.example`
+and `mirror.tfrc.example` are committed templates.
 
-> Tip: instead of passing `TF_CLI_CONFIG_FILE` every time, you can add the same
-> `dev_overrides` block to your user-wide `~/.terraformrc`.
+## What the example does
 
-## Rebuilding after code changes
-
-Re-run `go install .` from the repo root. Terraform picks up the new binary on
-the next command — no re-init required.
+- `provider.tf` — configures the provider (credentials from `URLLO_API_KEY` /
+  `URLLO_API_SECRET`).
+- `data.tf` — reads `urllo_hosts` and `urllo_rules` (safe, read-only).
+- `outputs.tf` — prints the host names and rule count.
+- `urllo.tf` — a commented `urllo_rule` resource; uncomment to manage a real
+  redirect, then `terraform apply` / `destroy`.
