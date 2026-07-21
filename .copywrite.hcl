@@ -12,6 +12,9 @@ project {
     # examples used within documentation (prose)
     "examples/**",
 
+    # runnable local-build example (HCL/shell, not part of the licensed provider)
+    "terraform/**",
+
     # GitHub issue template configuration
     ".github/ISSUE_TEMPLATE/*.yml",
 
