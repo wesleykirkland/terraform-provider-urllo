@@ -1,0 +1,19 @@
+# Terraform CLI configuration that resolves the urllo provider from a local
+# filesystem mirror instead of a registry, so `terraform init` works with a
+# locally-built provider. Other providers still install from the registry.
+#
+# Use this when you set a non-default TF_PLUGIN_MIRROR, or want to be explicit.
+# Copy to mirror.tfrc and set `path` to your mirror directory (absolute path;
+# Terraform does NOT expand ~ or $HOME). The default is <HOME>/.terraform.d/plugins.
+#
+#   TF_CLI_CONFIG_FILE=./mirror.tfrc terraform init
+provider_installation {
+  filesystem_mirror {
+    path    = "/Users/CHANGE_ME/.terraform.d/plugins"
+    include = ["registry.terraform.io/wesleykirkland/urllo"]
+  }
+
+  direct {
+    exclude = ["registry.terraform.io/wesleykirkland/urllo"]
+  }
+}

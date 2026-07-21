@@ -1,0 +1,18 @@
+# Terraform CLI configuration for running this example against a locally-built
+# provider, without publishing it to a registry.
+#
+# Copy this file to dev.tfrc and replace the path with the output of:
+#
+#     go env GOPATH
+#
+# i.e. the path below must be "<GOPATH>/bin" (the directory `go install` places
+# the terraform-provider-urllo binary in). Terraform does NOT expand ~ or $HOME,
+# so it must be an absolute path.
+provider_installation {
+  dev_overrides {
+    "registry.terraform.io/wesleykirkland/urllo" = "/Users/CHANGE_ME/go/bin"
+  }
+
+  # For all other providers, install as usual.
+  direct {}
+}
