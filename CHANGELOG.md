@@ -1,3 +1,4 @@
-## 0.1.0 (Unreleased)
+# Changelog
 
-FEATURES:
+All notable changes to this project are documented in this file, generated
+automatically from Conventional Commits by git-cliff.

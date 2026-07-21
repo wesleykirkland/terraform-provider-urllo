@@ -61,4 +61,23 @@ release:
   # If you want to manually examine the release before its live, uncomment this line:
   # draft: true
 changelog:
-  disable: true
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - '^chore(\(.+\))?:'
+      - '^ci(\(.+\))?:'
+      - '^test(\(.+\))?:'
+      - '^docs(\(.+\))?:'
+      - '^style(\(.+\))?:'
+      - 'Merge pull request'
+      - 'Merge branch'
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\(.+\))??!?:.+$'
+      order: 0
+    - title: Bug Fixes
+      regexp: '^.*?fix(\(.+\))??!?:.+$'
+      order: 1
+    - title: Others
+      order: 999
