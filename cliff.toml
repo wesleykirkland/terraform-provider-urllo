@@ -15,12 +15,16 @@ body = """
 {% for group, commits in commits | group_by(attribute="group") %}
 ### {{ group }}
 {% for commit in commits %}
-- {{ commit.message | upper_first }}{% if commit.remote.pr_number %} ([#{{ commit.remote.pr_number }}]({{ commit.remote.link }})){% endif %}
+- {{ commit.message | upper_first }}{% if commit.remote.pr_number %} ([#{{ commit.remote.pr_number }}](https://github.com/wesleykirkland/terraform-provider-urllo/pull/{{ commit.remote.pr_number }})){% endif %}
 {% endfor %}
 {% endfor %}
 """
 trim = true
 footer = ""
+
+[remote.github]
+owner = "wesleykirkland"
+repo = "terraform-provider-urllo"
 
 [git]
 conventional_commits = true
