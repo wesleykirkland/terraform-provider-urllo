@@ -71,6 +71,7 @@ jobs:
       - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
           terraform_wrapper: false # needed by the mock acceptance tests
+          terraform_version: "~1.15"
       - run: go vet ./...
       - name: Run all tests
         run: TF_ACC=1 go test -race -cover ./...
@@ -97,6 +98,12 @@ jobs:
           go-version-file: 'go.mod'
           cache: true
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_wrapper: false # needed by tf-via-pr for detailed exit codes
+          terraform_version: "~1.15"
+      
       # Build the provider from source into Terraform's implied local mirror and
       # write a CLI config so init resolves it from there (never the registry).
       - name: Build provider into local mirror
@@ -104,11 +111,6 @@ jobs:
           ./terraform/build-local.sh "${PROVIDER_VERSION}"
           printf 'provider_installation {\n  filesystem_mirror {\n    path    = "%s/.terraform.d/plugins"\n    include = ["registry.terraform.io/wesleykirkland/urllo"]\n  }\n  direct {\n    exclude = ["registry.terraform.io/wesleykirkland/urllo"]\n  }\n}\n' "$HOME" > "$RUNNER_TEMP/mirror.tfrc"
           echo "TF_CLI_CONFIG_FILE=$RUNNER_TEMP/mirror.tfrc" >> "$GITHUB_ENV"
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
-        with:
-          terraform_wrapper: false # needed by tf-via-pr for detailed exit codes
 
       # Security scanning — runs on every event except label-only triggers.
       - name: Run Checkov
