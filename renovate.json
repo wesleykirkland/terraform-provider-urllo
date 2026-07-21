@@ -4,27 +4,20 @@
     "config:recommended",
     ":semanticCommits",
     ":semanticCommitTypeAll(chore)",
-    ":semanticCommitScope(deps)",
-    "group:allNonMajor"
+    ":semanticCommitScope(deps)"
   ],
   "labels": ["dependencies"],
   "schedule": ["before 6am on monday"],
-  "prConcurrentLimit": 3,
   "packageRules": [
     {
-      "description": "Bundle all Go module updates (both the provider and tools modules) into one PR.",
-      "matchManagers": ["gomod"],
-      "groupName": "go modules"
+      "description": "Consolidate every non-major update (Go modules + GitHub Actions, all directories) into a single PR.",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest", "bump"],
+      "groupName": "all non-major dependencies"
     },
     {
-      "description": "Bundle all GitHub Actions updates into one PR, keeping SHA pins.",
-      "matchManagers": ["github-actions"],
-      "groupName": "github actions"
-    },
-    {
-      "description": "Bundle major updates per manager rather than one PR each.",
+      "description": "Consolidate every major update into a single PR, kept separate from non-major so breaking changes are reviewed on their own.",
       "matchUpdateTypes": ["major"],
-      "groupName": "{{manager}} major updates"
+      "groupName": "all major dependencies"
     }
   ]
 }
