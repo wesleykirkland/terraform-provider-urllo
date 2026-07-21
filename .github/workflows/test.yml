@@ -34,6 +34,31 @@ jobs:
         with:
           version: latest
 
+  # Unit tests run on every push/PR and require no credentials. Acceptance tests
+  # are gated behind TF_ACC, so they do not run here.
+  unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - run: go mod download
+      - name: go vet
+        run: go vet ./...
+      - name: go test (race, cover)
+        run: go test -race -cover ./...
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
+      # Enforce a coverage floor. The mock-backed acceptance tests run without
+      # credentials, so this covers the full CRUD path. See COVERAGE.md.
+      - name: coverage gate
+        run: make cover
+
   generate:
     runs-on: ubuntu-latest
     steps:
@@ -52,7 +77,9 @@ jobs:
           git diff --compact-summary --exit-code || \
             (echo; echo "Unexpected difference in directories after code generation. Run 'make generate' command and commit."; exit 1)
 
-  # Run acceptance tests in a matrix with Terraform CLI versions
+  # Run acceptance tests in a matrix with Terraform CLI versions. These require
+  # Urllo credentials configured as repository secrets; without them the tests
+  # skip themselves.
   test:
     name: 'Acceptance Tests: Terraform ${{ matrix.terraform }}'
     needs: build
@@ -78,5 +105,8 @@ jobs:
       - run: go mod download
       - env:
           TF_ACC: "1"
+          URLLO_API_KEY: ${{ secrets.URLLO_API_KEY }}
+          URLLO_API_SECRET: ${{ secrets.URLLO_API_SECRET }}
+          URLLO_TEST_HOST: ${{ vars.URLLO_TEST_HOST }}
         run: go test -v -cover ./internal/provider/
         timeout-minutes: 10
