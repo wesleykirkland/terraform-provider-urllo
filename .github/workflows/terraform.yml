@@ -17,8 +17,6 @@ name: Terraform
 
 on:
   pull_request:
-    branches:
-      - main
     paths:
       - 'terraform/**'
       - 'internal/**'
