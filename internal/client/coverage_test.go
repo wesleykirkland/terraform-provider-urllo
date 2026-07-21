@@ -115,7 +115,7 @@ func TestIdempotencyKeyMethod(t *testing.T) {
 	if got := c.idempotencyKey(http.MethodPost, &requestOptions{}); got != "" {
 		t.Errorf("no key requested should be empty, got %q", got)
 	}
-	if got := c.idempotencyKey(http.MethodPatch, &requestOptions{generateIdempotencyKey: true}); got == "" {
+	if c.idempotencyKey(http.MethodPatch, &requestOptions{generateIdempotencyKey: true}) == "" {
 		t.Error("expected a generated key")
 	}
 }

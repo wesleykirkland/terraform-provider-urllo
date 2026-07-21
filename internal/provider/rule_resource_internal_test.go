@@ -69,7 +69,7 @@ func TestWaitForDNS_SuccessAndTimeout(t *testing.T) {
 
 	// Non-matching resolver -> timeout returns reasons.
 	r = &RuleResource{resolver: fakeResolver{hosts: map[string][]string{"bad.com": {"9.9.9.9"}}}}
-	if reasons := r.waitForDNS(context.Background(), "bad.com", required, time.Now().Add(5*time.Millisecond)); reasons == nil {
+	if r.waitForDNS(context.Background(), "bad.com", required, time.Now().Add(5*time.Millisecond)) == nil {
 		t.Fatalf("expected timeout reasons, got nil")
 	}
 }

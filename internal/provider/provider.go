@@ -24,6 +24,12 @@ const (
 	envEndpoint  = "URLLO_ENDPOINT"
 )
 
+const (
+	// envVarSuffixMD closes the markdown code span opened before an env var name.
+	envVarSuffixMD = "` environment variable."
+	envVarSuffix   = " environment variable."
+)
+
 // Ensure UrlloProvider satisfies the provider interface.
 var _ provider.Provider = &UrlloProvider{}
 
@@ -53,18 +59,18 @@ func (p *UrlloProvider) Schema(ctx context.Context, req provider.SchemaRequest, 
 		Attributes: map[string]schema.Attribute{
 			"api_key": schema.StringAttribute{
 				MarkdownDescription: "Urllo API key (HTTP Basic username). May also be set with the `" +
-					envAPIKey + "` environment variable.",
+					envAPIKey + envVarSuffixMD,
 				Optional: true,
 			},
 			"api_secret": schema.StringAttribute{
 				MarkdownDescription: "Urllo API secret (HTTP Basic password). May also be set with the `" +
-					envAPISecret + "` environment variable.",
+					envAPISecret + envVarSuffixMD,
 				Optional:  true,
 				Sensitive: true,
 			},
 			"endpoint": schema.StringAttribute{
 				MarkdownDescription: "Base URL for the Urllo API. Defaults to `" + client.DefaultBaseURL +
-					"`. May also be set with the `" + envEndpoint + "` environment variable.",
+					"`. May also be set with the `" + envEndpoint + envVarSuffixMD,
 				Optional: true,
 			},
 		},
@@ -81,11 +87,11 @@ func (p *UrlloProvider) Configure(ctx context.Context, req provider.ConfigureReq
 	// Values that are still unknown at plan time cannot be resolved yet.
 	if data.APIKey.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(path.Root("api_key"), "Unknown Urllo API key",
-			"The api_key value is unknown. Set a static value or the "+envAPIKey+" environment variable.")
+			"The api_key value is unknown. Set a static value or the "+envAPIKey+envVarSuffix)
 	}
 	if data.APISecret.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(path.Root("api_secret"), "Unknown Urllo API secret",
-			"The api_secret value is unknown. Set a static value or the "+envAPISecret+" environment variable.")
+			"The api_secret value is unknown. Set a static value or the "+envAPISecret+envVarSuffix)
 	}
 	if resp.Diagnostics.HasError() {
 		return
@@ -99,11 +105,11 @@ func (p *UrlloProvider) Configure(ctx context.Context, req provider.ConfigureReq
 
 	if apiKey == "" {
 		resp.Diagnostics.AddAttributeError(path.Root("api_key"), "Missing Urllo API key",
-			"Set the api_key provider attribute or the "+envAPIKey+" environment variable.")
+			"Set the api_key provider attribute or the "+envAPIKey+envVarSuffix)
 	}
 	if apiSecret == "" {
 		resp.Diagnostics.AddAttributeError(path.Root("api_secret"), "Missing Urllo API secret",
-			"Set the api_secret provider attribute or the "+envAPISecret+" environment variable.")
+			"Set the api_secret provider attribute or the "+envAPISecret+envVarSuffix)
 	}
 	if resp.Diagnostics.HasError() {
 		return

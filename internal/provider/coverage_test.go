@@ -83,7 +83,7 @@ func TestDurationValidator(t *testing.T) {
 
 func TestObjectToSecurityNull(t *testing.T) {
 	var d diag.Diagnostics
-	if s := objectToSecurity(context.Background(), types.ObjectNull(securityAttrTypes), &d); s != nil {
+	if objectToSecurity(context.Background(), types.ObjectNull(securityAttrTypes), &d) != nil {
 		t.Error("null object should convert to nil")
 	}
 }

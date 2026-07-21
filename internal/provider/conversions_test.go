@@ -28,7 +28,7 @@ func TestMatchOptionsRoundTrip(t *testing.T) {
 	if obj := matchOptionsToObject(nil, &d); !obj.IsNull() {
 		t.Fatal("nil MatchOptions should produce a null object")
 	}
-	if got := objectToMatchOptions(ctx, types.ObjectNull(matchOptionsAttrTypes), &d); got != nil {
+	if objectToMatchOptions(ctx, types.ObjectNull(matchOptionsAttrTypes), &d) != nil {
 		t.Fatal("null object should convert back to nil")
 	}
 

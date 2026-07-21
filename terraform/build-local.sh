@@ -51,7 +51,7 @@ echo "    installed -> $DEST/$BINARY"
 # automatically. A custom TF_PLUGIN_MIRROR (e.g. in CI) needs an explicit
 # filesystem_mirror config so init resolves urllo from there instead of the
 # registry, while other providers still install normally.
-if [ "$MIRROR" != "$DEFAULT_MIRROR" ]; then
+if [[ "$MIRROR" != "$DEFAULT_MIRROR" ]]; then
   MIRROR_TFRC="$TF_DIR/mirror.tfrc"
   cat >"$MIRROR_TFRC" <<TFRC
 provider_installation {
@@ -86,7 +86,7 @@ Next steps:
   export URLLO_API_KEY=...
   export URLLO_API_SECRET=...
 EOF
-if [ -n "${TF_CLI_CONFIG_FILE:-}" ]; then
+if [[ -n "${TF_CLI_CONFIG_FILE:-}" ]]; then
   echo "  export TF_CLI_CONFIG_FILE=\"$TF_CLI_CONFIG_FILE\"   # only needed again if you re-run init"
 fi
 echo "  terraform -chdir=\"$TF_DIR\" plan"
