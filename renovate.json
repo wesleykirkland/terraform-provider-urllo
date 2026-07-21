@@ -1,0 +1,30 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":semanticCommitTypeAll(chore)",
+    ":semanticCommitScope(deps)",
+    "group:allNonMajor"
+  ],
+  "labels": ["dependencies"],
+  "schedule": ["before 6am on monday"],
+  "prConcurrentLimit": 3,
+  "packageRules": [
+    {
+      "description": "Bundle all Go module updates (both the provider and tools modules) into one PR.",
+      "matchManagers": ["gomod"],
+      "groupName": "go modules"
+    },
+    {
+      "description": "Bundle all GitHub Actions updates into one PR, keeping SHA pins.",
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions"
+    },
+    {
+      "description": "Bundle major updates per manager rather than one PR each.",
+      "matchUpdateTypes": ["major"],
+      "groupName": "{{manager}} major updates"
+    }
+  ]
+}
