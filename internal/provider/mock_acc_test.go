@@ -63,10 +63,16 @@ resource "urllo_rule" "test" {
 				),
 			},
 			{
-				ResourceName:            "urllo_rule.test",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"validate_dns", "validate_dns_timeout"},
+				ResourceName:      "urllo_rule.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				// The Urllo API normalizes URLs server-side (e.g. adding a
+				// trailing slash, adding a scheme to bare hostnames), so a
+				// fresh import reflects the API's normalized form rather than
+				// the originally-configured string, even though both refer to
+				// the same redirect. See applyRuleToModel for the write side of
+				// this trade-off.
+				ImportStateVerifyIgnore: []string{"validate_dns", "validate_dns_timeout", "target_url", "source_urls"},
 			},
 		},
 	})
@@ -154,7 +160,10 @@ data "urllo_host" "byid" {
 data "urllo_hosts" "all" {}
 `, mockHostName, mockHostName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.urllo_rule.by_id", "target_url", "https://dest.example.com"),
+					// The mock (like the real Urllo API) normalizes a path-less
+					// target_url by appending a trailing slash; data sources
+					// faithfully report the server's actual value.
+					resource.TestCheckResourceAttr("data.urllo_rule.by_id", "target_url", "https://dest.example.com/"),
 					resource.TestCheckResourceAttr("data.urllo_rules.all", "rules.#", "1"),
 					resource.TestCheckResourceAttr("data.urllo_host.one", "id", "host-1"),
 					resource.TestCheckResourceAttr("data.urllo_host.one", "dns_status", "active"),

@@ -37,10 +37,16 @@ func TestAccRuleResource(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            "urllo_rule.test",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"validate_dns", "validate_dns_timeout"},
+				ResourceName:      "urllo_rule.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				// The Urllo API normalizes URLs server-side (e.g. adding a
+				// trailing slash, adding a scheme to bare hostnames), so a
+				// fresh import reflects the API's normalized form rather than
+				// the originally-configured string, even though both refer to
+				// the same redirect. See applyRuleToModel for the write side of
+				// this trade-off.
+				ImportStateVerifyIgnore: []string{"validate_dns", "validate_dns_timeout", "target_url", "source_urls"},
 			},
 		},
 	})

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync"
 	"testing"
@@ -160,6 +161,7 @@ func (m *mockUrllo) rulesCollection(w http.ResponseWriter, r *http.Request) {
 		}
 		m.seq++
 		id := fmt.Sprintf("rule-%d", m.seq)
+		attrs = normalizeRuleAttributes(attrs)
 		rule := &client.Rule{ID: id, Type: "rule", Attributes: attrs}
 		m.rules[id] = rule
 		writeData(w, http.StatusCreated, rule)
@@ -196,7 +198,7 @@ func (m *mockUrllo) ruleItem(w http.ResponseWriter, r *http.Request, id string) 
 			writeErr(w, http.StatusUnprocessableEntity, "bad body")
 			return
 		}
-		rule.Attributes = attrs
+		rule.Attributes = normalizeRuleAttributes(attrs)
 		writeData(w, http.StatusOK, rule)
 	case http.MethodDelete:
 		delete(m.rules, id)
@@ -286,4 +288,39 @@ func containsAny(haystack []string, needle string) bool {
 		}
 	}
 	return false
+}
+
+// normalizeRuleAttributes mimics the real Urllo API's server-side URL
+// normalization: target_url gets a trailing slash when it has no path, and
+// source_urls get an "https://" scheme prefix when bare hostnames are sent.
+// This reproduces the "Provider produced inconsistent result after apply" bug
+// reported against a live account, where the API's echoed values differed from
+// what was configured.
+func normalizeRuleAttributes(attrs client.RuleAttributes) client.RuleAttributes {
+	attrs.TargetURL = normalizeURL(attrs.TargetURL)
+	normalized := make([]string, len(attrs.SourceURLs))
+	for i, s := range attrs.SourceURLs {
+		normalized[i] = normalizeURL(s)
+	}
+	attrs.SourceURLs = normalized
+	return attrs
+}
+
+func normalizeURL(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+	if u.Scheme == "" {
+		u.Scheme = "https"
+		// url.Parse treats a bare "host.com" as a relative path, not a host.
+		if u.Host == "" {
+			u.Host = u.Path
+			u.Path = ""
+		}
+	}
+	if u.Path == "" {
+		u.Path = "/"
+	}
+	return u.String()
 }

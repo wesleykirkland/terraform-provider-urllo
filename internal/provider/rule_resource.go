@@ -269,11 +269,25 @@ func (r *RuleResource) attributesFromModel(ctx context.Context, data *RuleResour
 // applyRuleToModel copies server-returned values into the model.
 func (r *RuleResource) applyRuleToModel(ctx context.Context, rule *client.Rule, data *RuleResourceModel, diags *diag.Diagnostics) {
 	data.ID = types.StringValue(rule.ID)
-	data.TargetURL = types.StringValue(rule.Attributes.TargetURL)
 	data.ResponseType = types.StringValue(rule.Attributes.ResponseType)
 	data.ForwardParams = types.BoolValue(rule.Attributes.ForwardParams)
 	data.ForwardPath = types.BoolValue(rule.Attributes.ForwardPath)
-	data.SourceURLs = stringsToSet(ctx, rule.Attributes.SourceURLs, diags)
+
+	// target_url and source_urls are Required (not Computed), so Terraform
+	// requires the post-apply value to exactly equal what was planned. The
+	// Urllo API normalizes both (e.g. appending a trailing slash to target_url,
+	// reformatting source_urls), so echoing its response back here would
+	// violate that contract and fail with "Provider produced inconsistent
+	// result after apply". Only pull them from the API when the incoming model
+	// doesn't already have them — i.e. right after import, where
+	// ImportStatePassthroughID has set nothing but id. Otherwise trust the
+	// already-known plan/state value.
+	if data.TargetURL.IsNull() {
+		data.TargetURL = types.StringValue(rule.Attributes.TargetURL)
+	}
+	if data.SourceURLs.IsNull() {
+		data.SourceURLs = stringsToSet(ctx, rule.Attributes.SourceURLs, diags)
+	}
 
 	// Preserve a null tags value rather than an empty set to avoid perpetual
 	// diffs when tags are not configured.
