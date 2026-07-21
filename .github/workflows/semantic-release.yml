@@ -38,9 +38,9 @@ jobs:
 
       # Computes the next semver from Conventional Commits and creates the tag.
       # It does not create a GitHub release, so GoReleaser (release.yml) remains
-      # the single source of published artifacts. Consider SHA-pinning.
+      # the single source of published artifacts.
       - name: Create release tag
-        uses: mathieudutour/github-tag-action@v6.2
+        uses: mathieudutour/github-tag-action@a22cf08638b34d5badda920f9daf6e72c477b07b # v6.2
         with:
           github_token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
           release_branches: main
