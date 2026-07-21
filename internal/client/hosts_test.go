@@ -77,6 +77,13 @@ func TestListHostsFollowsPagination(t *testing.T) {
 
 func TestGetHostByName(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/hosts/h2" {
+			// GetHostByName must re-fetch the matched host by ID: the list
+			// endpoint omits required_dns_entries, which DNS validation needs.
+			fmt.Fprint(w, `{"data":{"id":"h2","type":"host","attributes":{
+				"name":"b.com","required_dns_entries":{"recommended":{"type":"CNAME","values":["t.urllo.com"]}}}}}`)
+			return
+		}
 		fmt.Fprint(w, `{"data":[
 			{"id":"h1","type":"host","attributes":{"name":"a.com"}},
 			{"id":"h2","type":"host","attributes":{"name":"b.com"}}],"links":{"next":null}}`)
@@ -90,6 +97,9 @@ func TestGetHostByName(t *testing.T) {
 	}
 	if host == nil || host.ID != "h2" {
 		t.Fatalf("expected h2, got %+v", host)
+	}
+	if host.Attributes.RequiredDNSEntries == nil {
+		t.Fatalf("expected required_dns_entries to be populated from GetHost, got %+v", host.Attributes)
 	}
 
 	missing, err := c.GetHostByName(context.Background(), "nope.com")

@@ -76,7 +76,10 @@ func (c *Client) GetHost(ctx context.Context, id string) (*Host, error) {
 	return &env.Data, nil
 }
 
-// GetHostByName returns the host whose name matches name, or nil if none match.
+// GetHostByName returns the host whose name matches name, or nil if none
+// match. ListHosts only returns the basic attribute subset (no
+// RequiredDNSEntries, needed for DNS validation), so once a name match is
+// found this re-fetches it via GetHost to get the extended attributes.
 func (c *Client) GetHostByName(ctx context.Context, name string) (*Host, error) {
 	hosts, err := c.ListHosts(ctx, 100)
 	if err != nil {
@@ -84,7 +87,7 @@ func (c *Client) GetHostByName(ctx context.Context, name string) (*Host, error) 
 	}
 	for i := range hosts {
 		if hosts[i].Attributes.Name == name {
-			return &hosts[i], nil
+			return c.GetHost(ctx, hosts[i].ID)
 		}
 	}
 	return nil, nil

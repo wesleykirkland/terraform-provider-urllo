@@ -220,6 +220,10 @@ func TestValidateDNSHostNotFoundAndMatched(t *testing.T) {
 
 	// Host found with no required DNS entries -> validation passes immediately.
 	found := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/hosts/h1" {
+			_, _ = w.Write([]byte(`{"data":{"id":"h1","type":"host","attributes":{"name":"ok.com"}}}`))
+			return
+		}
 		_, _ = w.Write([]byte(`{"data":[{"id":"h1","type":"host","attributes":{"name":"ok.com"}}],"links":{"next":null}}`))
 	}))
 	defer found.Close()
