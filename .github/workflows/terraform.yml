@@ -63,12 +63,12 @@ jobs:
     name: Go tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: 'go.mod'
           cache: true
-      - uses: hashicorp/setup-terraform@v4
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
           terraform_wrapper: false # needed by the mock acceptance tests
       - run: go vet ./...
@@ -89,10 +89,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
 
       - name: Set up Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -106,14 +106,14 @@ jobs:
           echo "TF_CLI_CONFIG_FILE=$RUNNER_TEMP/mirror.tfrc" >> "$GITHUB_ENV"
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
           terraform_wrapper: false # needed by tf-via-pr for detailed exit codes
 
       # Security scanning — runs on every event except label-only triggers.
       - name: Run Checkov
         if: github.event.action != 'labeled'
-        uses: bridgecrewio/checkov-action@v12
+        uses: bridgecrewio/checkov-action@99bb2caf247dfd9f03cf984373bc6043d4e32ebf # v12.1347.0
         with:
           directory: ${{ env.TF_WORKING_DIR }}
           framework: terraform
@@ -123,14 +123,14 @@ jobs:
 
       - name: Upload Checkov results
         if: github.event.action != 'labeled' && always() && hashFiles('terraform-checkov.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@e0647621c2984b5ed2f768cb892365bf2a616ad1 # v4
         with:
           sarif_file: terraform-checkov.sarif
         continue-on-error: true
 
       - name: Run tfsec
         if: github.event.action != 'labeled'
-        uses: aquasecurity/tfsec-action@v1.0.3
+        uses: aquasecurity/tfsec-action@b466648d6e39e7c75324f25d83891162a721f2d6 # v1.0.3
         with:
           working_directory: ${{ env.TF_WORKING_DIR }}
           soft_fail: true
@@ -138,7 +138,7 @@ jobs:
 
       # Plan on PR; apply on merge to main, the run-apply label, or dispatch.
       - name: Provision TF
-        uses: op5dev/tf-via-pr@v13
+        uses: op5dev/tf-via-pr@39ed2635c056ca408ed24cc5c2baf0ef4381a7a5 # v13
         env:
           TF_IN_AUTOMATION: true
           TF_LOG: ERROR
