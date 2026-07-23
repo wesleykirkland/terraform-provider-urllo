@@ -37,7 +37,7 @@ output "host_dns_status" {
 - `certificate_status` (String) Certificate status.
 - `detected_dns_entries` (Attributes List) Currently detected DNS records. (see [below for nested schema](#nestedatt--detected_dns_entries))
 - `dns_status` (String) DNS configuration status.
-- `dns_tested_at` (String) When DNS was last tested.
+- `dns_tested_at` (String) When DNS was last tested. Null unless the provider's `include_dns_tested_at` is set to `true`; see its schema description for why.
 - `match_options` (Attributes) How source URLs are matched. (see [below for nested schema](#nestedatt--match_options))
 - `not_found_action` (Attributes) Behaviour when no matching redirect is found. (see [below for nested schema](#nestedatt--not_found_action))
 - `required_dns_entries` (Attributes) DNS records required for this host. (see [below for nested schema](#nestedatt--required_dns_entries))
@@ -66,6 +66,7 @@ Read-Only:
 
 Read-Only:
 
+- `custom_404_body_present` (Boolean) Whether a custom 404 body is currently set. The body content itself is write-only per the [Get Host API docs](https://dashboard.urllo.com/docs/api#tag/Hosts/operation/getHost).
 - `forward_params` (Boolean) Copy source query parameters.
 - `forward_path` (Boolean) Copy the source path.
 - `response_code` (Number) Response code (301/302/404).

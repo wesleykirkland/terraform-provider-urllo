@@ -8,12 +8,12 @@ output "rule_count" {
   value       = length(data.urllo_rules.all.rules)
 }
 
-output "urllo_unleashthe_cloud" {
-  description = "Details for the urllo.unleashthe.cloud host only."
-  value = {
-    id                 = data.urllo_host.urllo_unleashthe_cloud.id
-    name               = data.urllo_host.urllo_unleashthe_cloud.name
-    dns_status         = data.urllo_host.urllo_unleashthe_cloud.dns_status
-    certificate_status = data.urllo_host.urllo_unleashthe_cloud.certificate_status
-  }
+output "custom_404_body_present" {
+  description = "Drift check for the custom_404 host: whether a custom 404 body is currently set, reflecting the resource's own refreshed state rather than a separate data source lookup."
+  value       = urllo_host.custom_404.not_found_action.custom_404_body_present
+}
+
+output "urllo_rule_example3" {
+  description = "Full output from example 3"
+  value       = urllo_rule.example3
 }

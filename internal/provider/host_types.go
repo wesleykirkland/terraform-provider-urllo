@@ -23,10 +23,11 @@ var (
 	}
 
 	notFoundActionAttrTypes = map[string]attr.Type{
-		"forward_params": types.BoolType,
-		"forward_path":   types.BoolType,
-		"response_code":  types.Int64Type,
-		"response_url":   types.StringType,
+		"forward_params":          types.BoolType,
+		"forward_path":            types.BoolType,
+		"response_code":           types.Int64Type,
+		"response_url":            types.StringType,
+		"custom_404_body_present": types.BoolType,
 	}
 
 	securityAttrTypes = map[string]attr.Type{
@@ -76,10 +77,11 @@ func notFoundActionToObject(nfa *client.NotFoundAction, diags *diag.Diagnostics)
 		return types.ObjectNull(notFoundActionAttrTypes)
 	}
 	obj, d := types.ObjectValue(notFoundActionAttrTypes, map[string]attr.Value{
-		"forward_params": types.BoolValue(nfa.ForwardParams),
-		"forward_path":   types.BoolValue(nfa.ForwardPath),
-		"response_code":  int64PtrValue(nfa.ResponseCode),
-		"response_url":   stringPtrValue(nfa.ResponseURL),
+		"forward_params":          types.BoolValue(nfa.ForwardParams),
+		"forward_path":            types.BoolValue(nfa.ForwardPath),
+		"response_code":           int64PtrValue(nfa.ResponseCode),
+		"response_url":            stringPtrValue(nfa.ResponseURL),
+		"custom_404_body_present": types.BoolValue(nfa.Custom404BodyPresent),
 	})
 	diags.Append(d...)
 	return obj
@@ -192,12 +194,16 @@ func objectToNotFoundAction(ctx context.Context, obj types.Object, diags *diag.D
 		return nil
 	}
 	var m struct {
-		ForwardParams types.Bool   `tfsdk:"forward_params"`
-		ForwardPath   types.Bool   `tfsdk:"forward_path"`
-		ResponseCode  types.Int64  `tfsdk:"response_code"`
-		ResponseURL   types.String `tfsdk:"response_url"`
+		ForwardParams        types.Bool   `tfsdk:"forward_params"`
+		ForwardPath          types.Bool   `tfsdk:"forward_path"`
+		ResponseCode         types.Int64  `tfsdk:"response_code"`
+		ResponseURL          types.String `tfsdk:"response_url"`
+		Custom404BodyPresent types.Bool   `tfsdk:"custom_404_body_present"`
 	}
 	diags.Append(obj.As(ctx, &m, basetypes.ObjectAsOptions{})...)
+	// Custom404BodyPresent is computed by the API and never written here; the
+	// actual body comes from the sibling custom_404_body resource attribute
+	// and is attached by the caller.
 	return &client.NotFoundAction{
 		ForwardParams: m.ForwardParams.ValueBool(),
 		ForwardPath:   m.ForwardPath.ValueBool(),

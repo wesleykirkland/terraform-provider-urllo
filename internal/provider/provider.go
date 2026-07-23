@@ -42,9 +42,10 @@ type UrlloProvider struct {
 
 // UrlloProviderModel maps provider configuration.
 type UrlloProviderModel struct {
-	APIKey    types.String `tfsdk:"api_key"`
-	APISecret types.String `tfsdk:"api_secret"`
-	Endpoint  types.String `tfsdk:"endpoint"`
+	APIKey             types.String `tfsdk:"api_key"`
+	APISecret          types.String `tfsdk:"api_secret"`
+	Endpoint           types.String `tfsdk:"endpoint"`
+	IncludeDNSTestedAt types.Bool   `tfsdk:"include_dns_tested_at"`
 }
 
 func (p *UrlloProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -71,6 +72,14 @@ func (p *UrlloProvider) Schema(ctx context.Context, req provider.SchemaRequest, 
 			"endpoint": schema.StringAttribute{
 				MarkdownDescription: "Base URL for the Urllo API. Defaults to `" + client.DefaultBaseURL +
 					"`. May also be set with the `" + envEndpoint + envVarSuffixMD,
+				Optional: true,
+			},
+			"include_dns_tested_at": schema.BoolAttribute{
+				MarkdownDescription: "Whether `urllo_host`'s `dns_tested_at` attribute is populated from the API. " +
+					"Defaults to `false`: Urllo re-tests DNS on its own schedule, so this timestamp changes " +
+					"independently of any Terraform-managed configuration, and surfacing it causes `dns_tested_at` " +
+					"to show as changed outside of Terraform on every refresh even though nothing actionable " +
+					"changed. Set to `true` to opt back in and have it populated.",
 				Optional: true,
 			},
 		},
@@ -117,8 +126,12 @@ func (p *UrlloProvider) Configure(ctx context.Context, req provider.ConfigureReq
 
 	ua := "terraform-provider-urllo/" + p.version
 	c := client.New(endpoint, apiKey, apiSecret, client.WithUserAgent(ua))
-	resp.ResourceData = c
-	resp.DataSourceData = c
+	pd := &providerData{
+		client:             c,
+		includeDNSTestedAt: data.IncludeDNSTestedAt.ValueBool(),
+	}
+	resp.ResourceData = pd
+	resp.DataSourceData = pd
 }
 
 func (p *UrlloProvider) Resources(ctx context.Context) []func() resource.Resource {

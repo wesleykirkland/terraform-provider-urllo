@@ -36,8 +36,8 @@ resource "urllo_rule" "example" {
 
 ### Required
 
-- `source_urls` (Set of String) URLs to redirect from, e.g. `example.com` or `example.com/path`.
-- `target_url` (String) URL to redirect to.
+- `source_urls` (Set of String) URLs to redirect from, e.g. `example.com` or `example.com/path`. Urllo silently appends a trailing `/` to any bare-domain entry with no path (e.g. `example.com` becomes `example.com/`); write those entries with the trailing slash already, or Terraform will see a permanent diff against what the API stores. URLs that already have a path (e.g. `example.com/promo`) are left as-is.
+- `target_url` (String) URL to redirect to. As with `source_urls`, Urllo appends a trailing `/` to a bare-domain value with no path (e.g. `https://example.com` becomes `https://example.com/`); write it with the trailing slash already so Terraform's plan matches what the API stores. A URL with an existing path (e.g. `https://example.com/promo`) is left as-is.
 
 ### Optional
 
@@ -50,7 +50,10 @@ resource "urllo_rule" "example" {
 
 ### Read-Only
 
+- `certificate_status` (String) Certificate status of the rule's source host.
+- `dns_status` (String) DNS configuration status of the rule's source host.
 - `id` (String) Rule identifier.
+- `name` (String) Display name Urllo assigns to the rule.
 
 ## Import
 

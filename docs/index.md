@@ -36,3 +36,4 @@ provider "urllo" {
 - `api_key` (String) Urllo API key (HTTP Basic username). May also be set with the `URLLO_API_KEY` environment variable.
 - `api_secret` (String, Sensitive) Urllo API secret (HTTP Basic password). May also be set with the `URLLO_API_SECRET` environment variable.
 - `endpoint` (String) Base URL for the Urllo API. Defaults to `https://api.urllo.com/v1`. May also be set with the `URLLO_ENDPOINT` environment variable.
+- `include_dns_tested_at` (Boolean) Whether `urllo_host`'s `dns_tested_at` attribute is populated from the API. Defaults to `false`: Urllo re-tests DNS on its own schedule, so this timestamp changes independently of any Terraform-managed configuration, and surfacing it causes `dns_tested_at` to show as changed outside of Terraform on every refresh even though nothing actionable changed. Set to `true` to opt back in and have it populated.

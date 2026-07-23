@@ -5,6 +5,7 @@ package provider
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -44,6 +45,9 @@ resource "urllo_rule" "test" {
 					resource.TestCheckResourceAttr("urllo_rule.test", "response_type", "moved_permanently"),
 					resource.TestCheckResourceAttr("urllo_rule.test", "forward_params", "false"),
 					resource.TestCheckResourceAttr("urllo_rule.test", "tags.#", "2"),
+					resource.TestCheckResourceAttrSet("urllo_rule.test", "name"),
+					resource.TestCheckResourceAttr("urllo_rule.test", "dns_status", "active"),
+					resource.TestCheckResourceAttr("urllo_rule.test", "certificate_status", "active"),
 				),
 			},
 			{
@@ -103,6 +107,9 @@ resource "urllo_host" "test" {
 					resource.TestCheckResourceAttr("urllo_host.test", "acme_enabled", "true"),
 					resource.TestCheckResourceAttr("urllo_host.test", "security.https_upgrade", "true"),
 					resource.TestCheckResourceAttr("urllo_host.test", "dns_status", "active"),
+					// The mock seeds a dns_tested_at value, but include_dns_tested_at
+					// defaults to false, so it must not appear in state.
+					resource.TestCheckNoResourceAttr("urllo_host.test", "dns_tested_at"),
 				),
 			},
 			{
@@ -122,6 +129,114 @@ resource "urllo_host" "test" {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"custom_404_body"},
+			},
+		},
+	})
+}
+
+// TestAccMockHostIncludeDNSTestedAt covers the provider-level opt-in: Urllo
+// re-tests DNS on its own schedule, so surfacing dns_tested_at by default
+// causes it to show as changed outside of Terraform on every refresh even
+// though nothing actionable changed. It's null unless a caller explicitly
+// opts back in via include_dns_tested_at.
+func TestAccMockHostIncludeDNSTestedAt(t *testing.T) {
+	configureMock(t)
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+provider "urllo" {
+  include_dns_tested_at = true
+}
+
+resource "urllo_host" "test" {
+  name = %q
+}
+
+data "urllo_host" "by_name" {
+  name = %q
+}
+`, mockHostName, mockHostName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("urllo_host.test", "dns_tested_at", "2020-11-24T22:33:35Z"),
+					resource.TestCheckResourceAttr("data.urllo_host.by_name", "dns_tested_at", "2020-11-24T22:33:35Z"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccMockHostCustom404 covers the fix for custom_404_body being nested
+// under not_found_action in the API request (it was previously sent as a
+// top-level field and silently dropped). custom_404_body_present is the only
+// signal Terraform has for drift, since the body content itself is write-only.
+//
+// The second step verifies that drift actually surfaces on the resource
+// itself (not just a separate data source lookup): it flips the presence
+// flag out-of-band, then re-plans with unchanged config and confirms the
+// resource's own state picks up the change on refresh.
+func TestAccMockHostCustom404(t *testing.T) {
+	srv, mock := newMockUrlloServerWithControl(t)
+	t.Setenv("URLLO_ENDPOINT", srv.URL)
+	t.Setenv("URLLO_API_KEY", "mock")
+	t.Setenv("URLLO_API_SECRET", "mock")
+
+	cfg := fmt.Sprintf(`
+resource "urllo_host" "test" {
+  name = %q
+  not_found_action = {
+    response_code = 404
+  }
+  custom_404_body = "<html><body>custom</body></html>"
+}
+`, mockHostName)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: cfg,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("urllo_host.test", "not_found_action.response_code", "404"),
+					resource.TestCheckResourceAttr("urllo_host.test", "not_found_action.custom_404_body_present", "true"),
+				),
+			},
+			{
+				PreConfig: func() {
+					mock.mu.Lock()
+					defer mock.mu.Unlock()
+					for _, h := range mock.hosts {
+						if h.Attributes.Name == mockHostName && h.Attributes.NotFoundAction != nil {
+							h.Attributes.NotFoundAction.Custom404BodyPresent = false
+						}
+					}
+				},
+				Config: cfg,
+				Check:  resource.TestCheckResourceAttr("urllo_host.test", "not_found_action.custom_404_body_present", "false"),
+			},
+		},
+	})
+}
+
+// TestAccMockHostCustom404RequiresNotFoundAction covers the plan-time guard
+// added alongside the fix above: custom_404_body has nowhere to attach in the
+// API request without a not_found_action block, so it's rejected up front
+// instead of silently no-op'ing. This is a single-step, nothing-ever-created
+// test so the destroy-time revalidation doesn't hit the same error.
+func TestAccMockHostCustom404RequiresNotFoundAction(t *testing.T) {
+	configureMock(t)
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+resource "urllo_host" "test" {
+  name             = %q
+  custom_404_body  = "<html><body>custom</body></html>"
+}
+`, mockHostName),
+				ExpectError: regexp.MustCompile(`Missing not_found_action`),
 			},
 		},
 	})
@@ -164,7 +279,11 @@ data "urllo_hosts" "all" {}
 					// target_url by appending a trailing slash; data sources
 					// faithfully report the server's actual value.
 					resource.TestCheckResourceAttr("data.urllo_rule.by_id", "target_url", "https://dest.example.com/"),
+					resource.TestCheckResourceAttrSet("data.urllo_rule.by_id", "name"),
+					resource.TestCheckResourceAttr("data.urllo_rule.by_id", "dns_status", "active"),
+					resource.TestCheckResourceAttr("data.urllo_rule.by_id", "certificate_status", "active"),
 					resource.TestCheckResourceAttr("data.urllo_rules.all", "rules.#", "1"),
+					resource.TestCheckResourceAttr("data.urllo_rules.all", "rules.0.dns_status", "active"),
 					resource.TestCheckResourceAttr("data.urllo_host.one", "id", "host-1"),
 					resource.TestCheckResourceAttr("data.urllo_host.one", "dns_status", "active"),
 					resource.TestCheckResourceAttr("data.urllo_host.byid", "name", mockHostName),

@@ -28,13 +28,16 @@ type RuleDataSource struct {
 
 // RuleDataSourceModel maps urllo_rule data-source data.
 type RuleDataSourceModel struct {
-	ID            types.String `tfsdk:"id"`
-	SourceURLs    types.Set    `tfsdk:"source_urls"`
-	TargetURL     types.String `tfsdk:"target_url"`
-	ResponseType  types.String `tfsdk:"response_type"`
-	ForwardParams types.Bool   `tfsdk:"forward_params"`
-	ForwardPath   types.Bool   `tfsdk:"forward_path"`
-	Tags          types.Set    `tfsdk:"tags"`
+	ID                types.String `tfsdk:"id"`
+	SourceURLs        types.Set    `tfsdk:"source_urls"`
+	TargetURL         types.String `tfsdk:"target_url"`
+	ResponseType      types.String `tfsdk:"response_type"`
+	ForwardParams     types.Bool   `tfsdk:"forward_params"`
+	ForwardPath       types.Bool   `tfsdk:"forward_path"`
+	Tags              types.Set    `tfsdk:"tags"`
+	Name              types.String `tfsdk:"name"`
+	DNSStatus         types.String `tfsdk:"dns_status"`
+	CertificateStatus types.String `tfsdk:"certificate_status"`
 }
 
 func (d *RuleDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -75,6 +78,18 @@ func (d *RuleDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 				Computed:            true,
 				ElementType:         types.StringType,
 			},
+			"name": schema.StringAttribute{
+				MarkdownDescription: "Display name Urllo assigns to the rule.",
+				Computed:            true,
+			},
+			"dns_status": schema.StringAttribute{
+				MarkdownDescription: "DNS configuration status of the rule's source host.",
+				Computed:            true,
+			},
+			"certificate_status": schema.StringAttribute{
+				MarkdownDescription: "Certificate status of the rule's source host.",
+				Computed:            true,
+			},
 		},
 	}
 }
@@ -109,6 +124,9 @@ func (d *RuleDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	data.ForwardPath = types.BoolValue(rule.Attributes.ForwardPath)
 	data.SourceURLs = stringsToSet(ctx, rule.Attributes.SourceURLs, &resp.Diagnostics)
 	data.Tags = stringsToSet(ctx, rule.Attributes.Tags, &resp.Diagnostics)
+	data.Name = types.StringValue(rule.Attributes.Name)
+	data.DNSStatus = types.StringValue(rule.Attributes.DNSStatus)
+	data.CertificateStatus = types.StringValue(rule.Attributes.CertificateStatus)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
