@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated
 automatically from Conventional Commits by git-cliff.
 
+## [0.1.1] - 2026-07-23
+
+### Bug Fixes
+
+- Custom 404 body drift and provider enhancements (#5) ([#5](https://github.com/wesleykirkland/terraform-provider-urllo/pull/5))
+
 ## [0.1.0] - 2026-07-21
 
 ### Features
