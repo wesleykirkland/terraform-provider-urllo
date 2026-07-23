@@ -53,7 +53,7 @@ resource "urllo_host" "example" {
 ### Optional
 
 - `acme_enabled` (Boolean) Whether automatic SSL certificate provisioning is enabled.
-- `custom_404_body` (String, Sensitive) Custom response body served when no redirect matches. Write-only: the API does not return the stored body, so this value is not refreshed from Urllo.
+- `custom_404_body` (String, Sensitive) Custom HTML response body served when no redirect matches, in effect only when `not_found_action.response_code` is `404`. Requires `not_found_action` to be configured (at least `response_code = 404`); it is not applied otherwise. Write-only: per the [Get Host API docs](https://dashboard.urllo.com/docs/api#tag/Hosts/operation/getHost), the API can only set this content, never return it, so this value is not refreshed from Urllo and content drift can't be detected — use `not_found_action.custom_404_body_present` to detect whether a body is currently set at all.
 - `match_options` (Attributes) How source URLs are matched. (see [below for nested schema](#nestedatt--match_options))
 - `not_found_action` (Attributes) Behaviour when no matching redirect is found. (see [below for nested schema](#nestedatt--not_found_action))
 - `security` (Attributes) HTTPS and HSTS security settings. (see [below for nested schema](#nestedatt--security))
@@ -63,7 +63,7 @@ resource "urllo_host" "example" {
 - `certificate_status` (String) Current certificate status.
 - `detected_dns_entries` (Attributes List) Currently detected DNS records for this host. (see [below for nested schema](#nestedatt--detected_dns_entries))
 - `dns_status` (String) DNS configuration status: `active`, `invalid`, or `requires_verification`.
-- `dns_tested_at` (String) When the host's DNS was last tested.
+- `dns_tested_at` (String) When the host's DNS was last tested. Null unless the provider's `include_dns_tested_at` is set to `true`: Urllo re-tests DNS on its own schedule, so by default this is left out of state to avoid it showing as changed outside of Terraform on every refresh.
 - `id` (String) Host identifier.
 - `required_dns_entries` (Attributes) DNS records that must be configured for this host. (see [below for nested schema](#nestedatt--required_dns_entries))
 
@@ -85,6 +85,10 @@ Optional:
 - `forward_path` (Boolean) Copy the source path to the target URL.
 - `response_code` (Number) Response code when no match is found: 301, 302, or 404.
 - `response_url` (String) Redirect target when `response_code` is 301 or 302 and no match is found.
+
+Read-Only:
+
+- `custom_404_body_present` (Boolean) Whether a custom 404 body is currently set on the host. The body content itself is write-only per the [Get Host API docs](https://dashboard.urllo.com/docs/api#tag/Hosts/operation/getHost) (see the top-level `custom_404_body` attribute); this flag is how drift in its presence can be detected.
 
 
 <a id="nestedatt--security"></a>
@@ -151,8 +155,6 @@ Import is supported using the following syntax:
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
-# Hosts are imported by their Urllo host ID. Find it in the Urllo dashboard
-# URL when viewing the host: the host-guid segment of
-# https://dashboard.urllo.com/customer-guid/hosts/host-guid
+# Hosts are imported by their Urllo host ID.
 terraform import urllo_host.example abc-def
 ```

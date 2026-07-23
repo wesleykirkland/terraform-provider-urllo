@@ -27,10 +27,11 @@ func dsNotFoundActionSchema() dschema.SingleNestedAttribute {
 		MarkdownDescription: "Behaviour when no matching redirect is found.",
 		Computed:            true,
 		Attributes: map[string]dschema.Attribute{
-			"forward_params": dschema.BoolAttribute{Computed: true, MarkdownDescription: "Copy source query parameters."},
-			"forward_path":   dschema.BoolAttribute{Computed: true, MarkdownDescription: "Copy the source path."},
-			"response_code":  dschema.Int64Attribute{Computed: true, MarkdownDescription: "Response code (301/302/404)."},
-			"response_url":   dschema.StringAttribute{Computed: true, MarkdownDescription: "Redirect target for 301/302."},
+			"forward_params":          dschema.BoolAttribute{Computed: true, MarkdownDescription: "Copy source query parameters."},
+			"forward_path":            dschema.BoolAttribute{Computed: true, MarkdownDescription: "Copy the source path."},
+			"response_code":           dschema.Int64Attribute{Computed: true, MarkdownDescription: "Response code (301/302/404)."},
+			"response_url":            dschema.StringAttribute{Computed: true, MarkdownDescription: "Redirect target for 301/302."},
+			"custom_404_body_present": dschema.BoolAttribute{Computed: true, MarkdownDescription: "Whether a custom 404 body is currently set. The body content itself is write-only per the " + getHostAPIDocsLink + "."},
 		},
 	}
 }

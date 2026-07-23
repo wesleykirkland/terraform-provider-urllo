@@ -26,9 +26,10 @@ func TestProviderConfigureUnknownValues(t *testing.T) {
 	objType := sc.Type().TerraformType(ctx)
 
 	raw := tftypes.NewValue(objType, map[string]tftypes.Value{
-		"api_key":    tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
-		"api_secret": tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
-		"endpoint":   tftypes.NewValue(tftypes.String, nil),
+		"api_key":               tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"api_secret":            tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"endpoint":              tftypes.NewValue(tftypes.String, nil),
+		"include_dns_tested_at": tftypes.NewValue(tftypes.Bool, nil),
 	})
 
 	resp := &provider.ConfigureResponse{}

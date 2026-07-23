@@ -43,10 +43,19 @@ func TestClientFromProviderData(t *testing.T) {
 
 	var d2 diag.Diagnostics
 	cl := client.New("", "k", "s")
-	if c, ok := clientFromProviderData(cl, &d2); !ok || c != cl {
+	pd := &providerData{client: cl, includeDNSTestedAt: true}
+	if c, ok := clientFromProviderData(pd, &d2); !ok || c != cl {
 		t.Error("correct type should return the client")
 	}
 	if d2.HasError() {
+		t.Error("correct type should not add an error")
+	}
+
+	var d3 diag.Diagnostics
+	if got, ok := providerDataFrom(pd, &d3); !ok || got != pd || !got.includeDNSTestedAt {
+		t.Error("correct type should return the providerData bundle")
+	}
+	if d3.HasError() {
 		t.Error("correct type should not add an error")
 	}
 }

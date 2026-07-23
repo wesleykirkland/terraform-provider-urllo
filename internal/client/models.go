@@ -41,11 +41,17 @@ type MatchOptions struct {
 
 // NotFoundAction configures behaviour when no matching redirect is found.
 type NotFoundAction struct {
-	ForwardParams        bool    `json:"forward_params"`
-	ForwardPath          bool    `json:"forward_path"`
-	Custom404BodyPresent bool    `json:"custom_404_body_present,omitempty"`
-	ResponseCode         *int    `json:"response_code,omitempty"`
-	ResponseURL          *string `json:"response_url,omitempty"`
+	ForwardParams bool `json:"forward_params"`
+	ForwardPath   bool `json:"forward_path"`
+	// Custom404BodyPresent is read-only: whether a custom body is currently
+	// set. The API never returns the body content itself.
+	Custom404BodyPresent bool `json:"custom_404_body_present,omitempty"`
+	// Custom404Body is write-only and only takes effect when ResponseCode is
+	// 404. It belongs here, nested under not_found_action, not at the
+	// top level of a host update payload.
+	Custom404Body *string `json:"custom_404_body,omitempty"`
+	ResponseCode  *int    `json:"response_code,omitempty"`
+	ResponseURL   *string `json:"response_url,omitempty"`
 }
 
 // Security holds HTTPS/HSTS settings for a host.

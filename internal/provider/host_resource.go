@@ -21,9 +21,16 @@ import (
 	"github.com/wesleykirkland/terraform-provider-urllo/internal/client"
 )
 
+// getHostAPIDocsLink points at the API reference for the endpoint host reads
+// call, so schema descriptions can cite it without repeating the URL. It's
+// the source of truth for why custom_404_body's content can't be diffed: the
+// API documents the body as set-only, never returned by a read.
+const getHostAPIDocsLink = "[Get Host API docs](https://dashboard.urllo.com/docs/api#tag/Hosts/operation/getHost)"
+
 var (
-	_ resource.Resource                = &HostResource{}
-	_ resource.ResourceWithImportState = &HostResource{}
+	_ resource.Resource                   = &HostResource{}
+	_ resource.ResourceWithImportState    = &HostResource{}
+	_ resource.ResourceWithValidateConfig = &HostResource{}
 )
 
 // NewHostResource returns a new urllo_host resource.
@@ -37,6 +44,9 @@ func NewHostResource() resource.Resource {
 // it from Terraform state; the host itself is not deleted.
 type HostResource struct {
 	client *client.Client
+	// includeDNSTestedAt mirrors the provider-level include_dns_tested_at
+	// setting; see its schema description for why this defaults to false.
+	includeDNSTestedAt bool
 }
 
 // HostResourceModel maps urllo_host schema data. Nested settings are held as
@@ -84,8 +94,12 @@ func (r *HostResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				Computed:            true,
 			},
 			"custom_404_body": schema.StringAttribute{
-				MarkdownDescription: "Custom response body served when no redirect matches. Write-only: the API " +
-					"does not return the stored body, so this value is not refreshed from Urllo.",
+				MarkdownDescription: "Custom HTML response body served when no redirect matches, in effect only " +
+					"when `not_found_action.response_code` is `404`. Requires `not_found_action` to be configured " +
+					"(at least `response_code = 404`); it is not applied otherwise. Write-only: per the " +
+					getHostAPIDocsLink + ", the API can only set this content, never return it, so this value is " +
+					"not refreshed from Urllo and content drift can't be detected — use " +
+					"`not_found_action.custom_404_body_present` to detect whether a body is currently set at all.",
 				Optional:  true,
 				Sensitive: true,
 			},
@@ -132,6 +146,12 @@ func (r *HostResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 						Optional:            true,
 						Computed:            true,
 					},
+					"custom_404_body_present": schema.BoolAttribute{
+						MarkdownDescription: "Whether a custom 404 body is currently set on the host. The body " +
+							"content itself is write-only per the " + getHostAPIDocsLink + " (see the top-level " +
+							"`custom_404_body` attribute); this flag is how drift in its presence can be detected.",
+						Computed: true,
+					},
 				},
 			},
 			"security": schema.SingleNestedAttribute{
@@ -175,8 +195,11 @@ func (r *HostResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				Computed:            true,
 			},
 			"dns_tested_at": schema.StringAttribute{
-				MarkdownDescription: "When the host's DNS was last tested.",
-				Computed:            true,
+				MarkdownDescription: "When the host's DNS was last tested. Null unless the provider's " +
+					"`include_dns_tested_at` is set to `true`: Urllo re-tests DNS on its own schedule, so by " +
+					"default this is left out of state to avoid it showing as changed outside of Terraform on " +
+					"every refresh.",
+				Computed: true,
 			},
 			"required_dns_entries": requiredDNSSchema(),
 			"detected_dns_entries": detectedDNSSchema(),
@@ -185,8 +208,26 @@ func (r *HostResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 }
 
 func (r *HostResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	if c, ok := clientFromProviderData(req.ProviderData, &resp.Diagnostics); ok {
-		r.client = c
+	if pd, ok := providerDataFrom(req.ProviderData, &resp.Diagnostics); ok {
+		r.client = pd.client
+		r.includeDNSTestedAt = pd.includeDNSTestedAt
+	}
+}
+
+// ValidateConfig catches a custom_404_body configured without a not_found_action
+// block up front. The API nests custom_404_body inside not_found_action, so
+// without that block there is nothing to attach it to and it would otherwise be
+// silently dropped rather than applied.
+func (r *HostResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var data HostResourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !data.Custom404Body.IsNull() && data.NotFoundAction.IsNull() {
+		resp.Diagnostics.AddAttributeError(path.Root("custom_404_body"), "Missing not_found_action",
+			"custom_404_body has no effect unless not_found_action is also configured with response_code = 404. "+
+				"Add a not_found_action block, e.g. not_found_action = { response_code = 404 }.")
 	}
 }
 
@@ -283,11 +324,20 @@ func (r *HostResource) readHost(ctx context.Context, data *HostResourceModel) (*
 
 // applyUpdate builds the write payload from the plan and PATCHes the host.
 func (r *HostResource) applyUpdate(ctx context.Context, id string, data *HostResourceModel, diags *diag.Diagnostics) *client.Host {
+	nfa := objectToNotFoundAction(ctx, data.NotFoundAction, diags)
+	// custom_404_body is a separate top-level resource attribute (for a better
+	// Terraform-facing shape), but the API only accepts it nested inside
+	// not_found_action. ValidateConfig already rejects the case where it's set
+	// without not_found_action configured, so nfa is non-nil here whenever
+	// there's a body to attach.
+	if body := stringToPtr(data.Custom404Body); body != nil && nfa != nil {
+		nfa.Custom404Body = body
+	}
+
 	upd := client.HostUpdate{
 		MatchOptions:   objectToMatchOptions(ctx, data.MatchOptions, diags),
-		NotFoundAction: objectToNotFoundAction(ctx, data.NotFoundAction, diags),
+		NotFoundAction: nfa,
 		Security:       objectToSecurity(ctx, data.Security, diags),
-		Custom404Body:  stringToPtr(data.Custom404Body),
 	}
 	if !data.ACMEEnabled.IsNull() && !data.ACMEEnabled.IsUnknown() {
 		v := data.ACMEEnabled.ValueBool()
@@ -314,7 +364,11 @@ func (r *HostResource) applyHostToModel(host *client.Host, data *HostResourceMod
 	data.ACMEEnabled = types.BoolValue(a.ACMEEnabled)
 	data.DNSStatus = types.StringValue(a.DNSStatus)
 	data.CertificateStatus = types.StringValue(a.CertificateStatus)
-	data.DNSTestedAt = stringPtrValue(a.DNSTestedAt)
+	if r.includeDNSTestedAt {
+		data.DNSTestedAt = stringPtrValue(a.DNSTestedAt)
+	} else {
+		data.DNSTestedAt = types.StringNull()
+	}
 	data.MatchOptions = matchOptionsToObject(a.MatchOptions, diags)
 	data.NotFoundAction = notFoundActionToObject(a.NotFoundAction, diags)
 	data.Security = securityToObject(a.Security, diags)
