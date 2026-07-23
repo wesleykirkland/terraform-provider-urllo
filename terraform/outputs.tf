@@ -15,5 +15,5 @@ output "custom_404_body_present" {
 
 output "urllo_rule_example3" {
   description = "Full output from example 3"
-  value = urllo_rule.example3
+  value       = urllo_rule.example3
 }
