@@ -70,27 +70,13 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
-      # GitHub's native code coverage only reads Cobertura XML; convert
-      # coverage.out (written by `make cover` above) to that format. The tool
-      # is version-locked via tools/go.sum (a floating `go install pkg@version`
-      # isn't reproducible), but it has to run with the repo root as its
-      # working directory to resolve this module's packages - it can't do
-      # that from inside the tools/ module - so it's built from tools/ and
-      # then executed from root.
-      - name: Convert coverage to Cobertura XML
-        run: |
-          (cd tools && go build -o ../.gocover-cobertura github.com/boumenot/gocover-cobertura)
-          ./.gocover-cobertura < coverage.out > coverage.xml
-      # fail-on-error is false because this 404s until Code Quality is enabled
-      # in repo Settings > Security (admin-only, not a workflow change) - a
-      # required check like Unit Tests can't block on that toggle.
-      - name: Upload code coverage
-        uses: actions/upload-code-coverage@1c15be36fc3733ba839b1dd643bd9556e4426dc1 # v1.4.1
+      # Feeds coverage.out (written by `make cover` above) to Codecov for PR
+      # coverage reports. fail_ci_if_error defaults to false, so a missing/bad
+      # CODECOV_TOKEN warns rather than failing this required check.
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@5975040f7f7d40edaff8d784b576fd65ae95c073 # v5.5.5
         with:
-          file: coverage.xml
-          language: Go
-          label: code-coverage/go-test
-          fail-on-error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   generate:
     runs-on: ubuntu-latest
