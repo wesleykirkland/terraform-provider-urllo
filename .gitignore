@@ -35,3 +35,8 @@ website/vendor
 *.winfile eol=crlf
 
 terraform-provider-urllo
+coverage.out
+coverage.xml
+
+# CCE
+settings.json

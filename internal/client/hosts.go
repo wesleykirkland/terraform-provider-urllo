@@ -33,15 +33,16 @@ type HostAttributes struct {
 	DetectedDNSEntries []DNSValue         `json:"detected_dns_entries,omitempty"`
 }
 
-// HostUpdate is the set of writable host attributes for PATCH /hosts/{id}.
+// HostUpdate is the set of writable host attributes for PATCH /hosts/{id}. The
+// custom 404 body is set via NotFoundAction.Custom404Body: the API's
+// patchHost request schema nests it under not_found_action, not at the top
+// level (confirmed against the live API and its OpenAPI spec — a top-level
+// custom_404_body is silently dropped).
 type HostUpdate struct {
 	ACMEEnabled    *bool           `json:"acme_enabled,omitempty"`
 	MatchOptions   *MatchOptions   `json:"match_options,omitempty"`
 	NotFoundAction *NotFoundAction `json:"not_found_action,omitempty"`
 	Security       *Security       `json:"security,omitempty"`
-	// Custom404Body sets the custom 404 response body. It is write-only; the API
-	// only reports whether one is present.
-	Custom404Body *string `json:"custom_404_body,omitempty"`
 }
 
 // ListHosts returns every host, transparently following pagination. limit sets

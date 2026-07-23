@@ -15,6 +15,10 @@ import (
 	"github.com/wesleykirkland/terraform-provider-urllo/internal/client"
 )
 
+// listRulesAPIDocsLink points at the API reference for the endpoint this data
+// source calls, so schema descriptions can cite it without repeating the URL.
+const listRulesAPIDocsLink = "[List Rules API docs](https://dashboard.urllo.com/docs/api#tag/Rules/operation/listRules)"
+
 var _ datasource.DataSource = &RulesDataSource{}
 
 // NewRulesDataSource returns a new urllo_rules data source.
@@ -42,38 +46,43 @@ func (d *RulesDataSource) Metadata(ctx context.Context, req datasource.MetadataR
 
 func (d *RulesDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Lists redirect rules, optionally filtered by source/target URL and tags.",
+		MarkdownDescription: "Lists redirect rules, optionally filtered by source/target URL and tags. See the " +
+			listRulesAPIDocsLink + " for parameter semantics.",
 		Attributes: map[string]schema.Attribute{
 			"source_query": schema.StringAttribute{
-				MarkdownDescription: "Filter by source URL (the API `sq` parameter).",
+				MarkdownDescription: "Filter by source URL (the API `sq` parameter). See the " + listRulesAPIDocsLink + ".",
 				Optional:            true,
 			},
 			"target_query": schema.StringAttribute{
-				MarkdownDescription: "Filter by target URL (the API `tq` parameter).",
+				MarkdownDescription: "Filter by target URL (the API `tq` parameter). See the " + listRulesAPIDocsLink + ".",
 				Optional:            true,
 			},
 			"tags": schema.SetAttribute{
-				MarkdownDescription: "Filter by tags.",
+				MarkdownDescription: "Filter by tags (the API `tags[]` parameter). See the " + listRulesAPIDocsLink + ".",
 				Optional:            true,
 				ElementType:         types.StringType,
 			},
 			"tag_match_strategy": schema.StringAttribute{
-				MarkdownDescription: "How tags are matched: `any` (default) or `all`.",
-				Optional:            true,
-				Validators:          []validator.String{stringvalidator.OneOf("any", "all")},
+				MarkdownDescription: "How tags are matched: `any` (default) or `all` (the API `tag_match_strategy` " +
+					"parameter). See the " + listRulesAPIDocsLink + ".",
+				Optional:   true,
+				Validators: []validator.String{stringvalidator.OneOf("any", "all")},
 			},
 			"rules": schema.ListNestedAttribute{
 				MarkdownDescription: "The matching rules.",
 				Computed:            true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"id":             schema.StringAttribute{Computed: true, MarkdownDescription: "Rule identifier."},
-						"source_urls":    schema.SetAttribute{Computed: true, ElementType: types.StringType, MarkdownDescription: "Source URLs."},
-						"target_url":     schema.StringAttribute{Computed: true, MarkdownDescription: "Target URL."},
-						"response_type":  schema.StringAttribute{Computed: true, MarkdownDescription: "Redirect type."},
-						"forward_params": schema.BoolAttribute{Computed: true, MarkdownDescription: "Whether query parameters are forwarded."},
-						"forward_path":   schema.BoolAttribute{Computed: true, MarkdownDescription: "Whether the path is forwarded."},
-						"tags":           schema.SetAttribute{Computed: true, ElementType: types.StringType, MarkdownDescription: "Tags."},
+						"id":                 schema.StringAttribute{Computed: true, MarkdownDescription: "Rule identifier."},
+						"source_urls":        schema.SetAttribute{Computed: true, ElementType: types.StringType, MarkdownDescription: "Source URLs."},
+						"target_url":         schema.StringAttribute{Computed: true, MarkdownDescription: "Target URL."},
+						"response_type":      schema.StringAttribute{Computed: true, MarkdownDescription: "Redirect type."},
+						"forward_params":     schema.BoolAttribute{Computed: true, MarkdownDescription: "Whether query parameters are forwarded."},
+						"forward_path":       schema.BoolAttribute{Computed: true, MarkdownDescription: "Whether the path is forwarded."},
+						"tags":               schema.SetAttribute{Computed: true, ElementType: types.StringType, MarkdownDescription: "Tags."},
+						"name":               schema.StringAttribute{Computed: true, MarkdownDescription: "Display name Urllo assigns to the rule."},
+						"dns_status":         schema.StringAttribute{Computed: true, MarkdownDescription: "DNS configuration status of the rule's source host."},
+						"certificate_status": schema.StringAttribute{Computed: true, MarkdownDescription: "Certificate status of the rule's source host."},
 					},
 				},
 			},

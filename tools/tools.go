@@ -5,6 +5,9 @@
 
 package tools
 
+// Blank-imported purely so `go mod tidy` tracks these CLI tools and go.sum
+// pins their versions; they're not used as libraries here. Both are invoked
+// via `go run` in the go:generate directives below.
 import (
 	_ "github.com/hashicorp/copywrite"
 	_ "github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs"

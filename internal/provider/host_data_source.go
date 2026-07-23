@@ -23,6 +23,9 @@ func NewHostDataSource() datasource.DataSource {
 // HostDataSource looks up a single host by ID or name.
 type HostDataSource struct {
 	client *client.Client
+	// includeDNSTestedAt mirrors the provider-level include_dns_tested_at
+	// setting; see its schema description for why this defaults to false.
+	includeDNSTestedAt bool
 }
 
 // HostDataSourceModel maps urllo_host data-source data.
@@ -58,13 +61,15 @@ func (d *HostDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 				Optional:            true,
 				Computed:            true,
 			},
-			"acme_enabled":         dschema.BoolAttribute{Computed: true, MarkdownDescription: "Whether automatic SSL is enabled."},
-			"match_options":        dsMatchOptionsSchema(),
-			"not_found_action":     dsNotFoundActionSchema(),
-			"security":             dsSecuritySchema(),
-			"dns_status":           dschema.StringAttribute{Computed: true, MarkdownDescription: "DNS configuration status."},
-			"certificate_status":   dschema.StringAttribute{Computed: true, MarkdownDescription: "Certificate status."},
-			"dns_tested_at":        dschema.StringAttribute{Computed: true, MarkdownDescription: "When DNS was last tested."},
+			"acme_enabled":       dschema.BoolAttribute{Computed: true, MarkdownDescription: "Whether automatic SSL is enabled."},
+			"match_options":      dsMatchOptionsSchema(),
+			"not_found_action":   dsNotFoundActionSchema(),
+			"security":           dsSecuritySchema(),
+			"dns_status":         dschema.StringAttribute{Computed: true, MarkdownDescription: "DNS configuration status."},
+			"certificate_status": dschema.StringAttribute{Computed: true, MarkdownDescription: "Certificate status."},
+			"dns_tested_at": dschema.StringAttribute{Computed: true, MarkdownDescription: "When DNS was last " +
+				"tested. Null unless the provider's `include_dns_tested_at` is set to `true`; see its schema " +
+				"description for why."},
 			"required_dns_entries": dsRequiredDNSSchema(),
 			"detected_dns_entries": dsDetectedDNSSchema(),
 		},
@@ -72,8 +77,9 @@ func (d *HostDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 }
 
 func (d *HostDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	if c, ok := clientFromProviderData(req.ProviderData, &resp.Diagnostics); ok {
-		d.client = c
+	if pd, ok := providerDataFrom(req.ProviderData, &resp.Diagnostics); ok {
+		d.client = pd.client
+		d.includeDNSTestedAt = pd.includeDNSTestedAt
 	}
 }
 
@@ -113,7 +119,11 @@ func (d *HostDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	data.ACMEEnabled = types.BoolValue(a.ACMEEnabled)
 	data.DNSStatus = types.StringValue(a.DNSStatus)
 	data.CertificateStatus = types.StringValue(a.CertificateStatus)
-	data.DNSTestedAt = stringPtrValue(a.DNSTestedAt)
+	if d.includeDNSTestedAt {
+		data.DNSTestedAt = stringPtrValue(a.DNSTestedAt)
+	} else {
+		data.DNSTestedAt = types.StringNull()
+	}
 	data.MatchOptions = matchOptionsToObject(a.MatchOptions, &resp.Diagnostics)
 	data.NotFoundAction = notFoundActionToObject(a.NotFoundAction, &resp.Diagnostics)
 	data.Security = securityToObject(a.Security, &resp.Diagnostics)

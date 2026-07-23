@@ -15,13 +15,16 @@ import (
 
 // ruleObjectAttrTypes is the shape of a rule object in the urllo_rules list.
 var ruleObjectAttrTypes = map[string]attr.Type{
-	"id":             types.StringType,
-	"source_urls":    types.SetType{ElemType: types.StringType},
-	"target_url":     types.StringType,
-	"response_type":  types.StringType,
-	"forward_params": types.BoolType,
-	"forward_path":   types.BoolType,
-	"tags":           types.SetType{ElemType: types.StringType},
+	"id":                 types.StringType,
+	"source_urls":        types.SetType{ElemType: types.StringType},
+	"target_url":         types.StringType,
+	"response_type":      types.StringType,
+	"forward_params":     types.BoolType,
+	"forward_path":       types.BoolType,
+	"tags":               types.SetType{ElemType: types.StringType},
+	"name":               types.StringType,
+	"dns_status":         types.StringType,
+	"certificate_status": types.StringType,
 }
 
 func ruleToObject(ctx context.Context, rule client.Rule, diags *diag.Diagnostics) types.Object {
@@ -36,13 +39,16 @@ func ruleToObject(ctx context.Context, rule client.Rule, diags *diag.Diagnostics
 	}
 
 	obj, d := types.ObjectValue(ruleObjectAttrTypes, map[string]attr.Value{
-		"id":             types.StringValue(rule.ID),
-		"source_urls":    sources,
-		"target_url":     types.StringValue(rule.Attributes.TargetURL),
-		"response_type":  types.StringValue(rule.Attributes.ResponseType),
-		"forward_params": types.BoolValue(rule.Attributes.ForwardParams),
-		"forward_path":   types.BoolValue(rule.Attributes.ForwardPath),
-		"tags":           tags,
+		"id":                 types.StringValue(rule.ID),
+		"source_urls":        sources,
+		"target_url":         types.StringValue(rule.Attributes.TargetURL),
+		"response_type":      types.StringValue(rule.Attributes.ResponseType),
+		"forward_params":     types.BoolValue(rule.Attributes.ForwardParams),
+		"forward_path":       types.BoolValue(rule.Attributes.ForwardPath),
+		"tags":               tags,
+		"name":               types.StringValue(rule.Attributes.Name),
+		"dns_status":         types.StringValue(rule.Attributes.DNSStatus),
+		"certificate_status": types.StringValue(rule.Attributes.CertificateStatus),
 	})
 	diags.Append(d...)
 	return obj

@@ -38,6 +38,9 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read # checkout
+      code-quality: write # upload coverage report
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -67,6 +70,13 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
+      # Feeds coverage.out (written by `make cover` above) to Codecov for PR
+      # coverage reports. fail_ci_if_error defaults to false, so a missing/bad
+      # CODECOV_TOKEN warns rather than failing this required check.
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@5975040f7f7d40edaff8d784b576fd65ae95c073 # v5.5.5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   generate:
     runs-on: ubuntu-latest

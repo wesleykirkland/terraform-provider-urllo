@@ -50,6 +50,7 @@ func newMockUrlloServerWithControl(t *testing.T) (*httptest.Server, *mockUrllo) 
 		rules: map[string]*client.Rule{},
 		hosts: map[string]*client.Host{},
 	}
+	dnsTestedAt := "2020-11-24T22:33:35Z"
 	m.hosts["host-1"] = &client.Host{
 		ID:   "host-1",
 		Type: "host",
@@ -57,6 +58,7 @@ func newMockUrlloServerWithControl(t *testing.T) (*httptest.Server, *mockUrllo) 
 			Name:              mockHostName,
 			DNSStatus:         "active",
 			CertificateStatus: "active",
+			DNSTestedAt:       &dnsTestedAt,
 		},
 	}
 	// A host whose required DNS will never be satisfied by a local lookup of the
@@ -162,6 +164,9 @@ func (m *mockUrllo) rulesCollection(w http.ResponseWriter, r *http.Request) {
 		m.seq++
 		id := fmt.Sprintf("rule-%d", m.seq)
 		attrs = normalizeRuleAttributes(attrs)
+		attrs.Name = id
+		attrs.DNSStatus = "active"
+		attrs.CertificateStatus = "active"
 		rule := &client.Rule{ID: id, Type: "rule", Attributes: attrs}
 		m.rules[id] = rule
 		writeData(w, http.StatusCreated, rule)
@@ -198,7 +203,14 @@ func (m *mockUrllo) ruleItem(w http.ResponseWriter, r *http.Request, id string) 
 			writeErr(w, http.StatusUnprocessableEntity, "bad body")
 			return
 		}
-		rule.Attributes = normalizeRuleAttributes(attrs)
+		attrs = normalizeRuleAttributes(attrs)
+		// name/dns_status/certificate_status are API-computed and never sent by
+		// the client on update; preserve the existing values rather than
+		// zeroing them out.
+		attrs.Name = rule.Attributes.Name
+		attrs.DNSStatus = rule.Attributes.DNSStatus
+		attrs.CertificateStatus = rule.Attributes.CertificateStatus
+		rule.Attributes = attrs
 		writeData(w, http.StatusOK, rule)
 	case http.MethodDelete:
 		delete(m.rules, id)
@@ -247,7 +259,12 @@ func (m *mockUrllo) hostItem(w http.ResponseWriter, r *http.Request, id string) 
 			host.Attributes.MatchOptions = upd.MatchOptions
 		}
 		if upd.NotFoundAction != nil {
-			host.Attributes.NotFoundAction = upd.NotFoundAction
+			nfa := *upd.NotFoundAction
+			// Mirrors the real API: custom_404_body is write-only. The content
+			// is never echoed back, only whether one is currently set.
+			nfa.Custom404BodyPresent = nfa.Custom404Body != nil && *nfa.Custom404Body != ""
+			nfa.Custom404Body = nil
+			host.Attributes.NotFoundAction = &nfa
 		}
 		if upd.Security != nil {
 			host.Attributes.Security = upd.Security
