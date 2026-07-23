@@ -76,12 +76,16 @@ jobs:
         run: |
           go install github.com/boumenot/gocover-cobertura@v1.5.0
           gocover-cobertura < coverage.out > coverage.xml
+      # fail-on-error is false because this 404s until Code Quality is enabled
+      # in repo Settings > Security (admin-only, not a workflow change) - a
+      # required check like Unit Tests can't block on that toggle.
       - name: Upload code coverage
         uses: actions/upload-code-coverage@1c15be36fc3733ba839b1dd643bd9556e4426dc1 # v1.4.1
         with:
           file: coverage.xml
           language: Go
           label: code-coverage/go-test
+          fail-on-error: false
 
   generate:
     runs-on: ubuntu-latest
