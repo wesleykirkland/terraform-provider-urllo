@@ -61,6 +61,9 @@ type RuleResourceModel struct {
 	Tags               types.Set    `tfsdk:"tags"`
 	ValidateDNS        types.Bool   `tfsdk:"validate_dns"`
 	ValidateDNSTimeout types.String `tfsdk:"validate_dns_timeout"`
+	Name               types.String `tfsdk:"name"`
+	DNSStatus          types.String `tfsdk:"dns_status"`
+	CertificateStatus  types.String `tfsdk:"certificate_status"`
 }
 
 func (r *RuleResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -77,17 +80,25 @@ func (r *RuleResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"source_urls": schema.SetAttribute{
-				MarkdownDescription: "URLs to redirect from, e.g. `example.com` or `example.com/path`.",
-				Required:            true,
-				ElementType:         types.StringType,
-				Validators:          []validator.Set{
+				MarkdownDescription: "URLs to redirect from, e.g. `example.com` or `example.com/path`. " +
+					"Urllo silently appends a trailing `/` to any bare-domain entry with no path (e.g. " +
+					"`example.com` becomes `example.com/`); write those entries with the trailing slash " +
+					"already, or Terraform will see a permanent diff against what the API stores. URLs " +
+					"that already have a path (e.g. `example.com/promo`) are left as-is.",
+				Required:    true,
+				ElementType: types.StringType,
+				Validators:  []validator.Set{
 					// setvalidator would be nicer, but requiring at least one URL
 					// is enforced by the API; keep the schema permissive.
 				},
 			},
 			"target_url": schema.StringAttribute{
-				MarkdownDescription: "URL to redirect to.",
-				Required:            true,
+				MarkdownDescription: "URL to redirect to. As with `source_urls`, Urllo appends a trailing " +
+					"`/` to a bare-domain value with no path (e.g. `https://example.com` becomes " +
+					"`https://example.com/`); write it with the trailing slash already so Terraform's plan " +
+					"matches what the API stores. A URL with an existing path (e.g. " +
+					"`https://example.com/promo`) is left as-is.",
+				Required: true,
 			},
 			"response_type": schema.StringAttribute{
 				MarkdownDescription: "Redirect type: `moved_permanently` (301) or `found` (302).",
@@ -132,6 +143,18 @@ func (r *RuleResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				Validators: []validator.String{
 					durationValidator{},
 				},
+			},
+			"name": schema.StringAttribute{
+				MarkdownDescription: "Display name Urllo assigns to the rule.",
+				Computed:            true,
+			},
+			"dns_status": schema.StringAttribute{
+				MarkdownDescription: "DNS configuration status of the rule's source host.",
+				Computed:            true,
+			},
+			"certificate_status": schema.StringAttribute{
+				MarkdownDescription: "Certificate status of the rule's source host.",
+				Computed:            true,
 			},
 		},
 	}
@@ -283,6 +306,9 @@ func (r *RuleResource) applyRuleToModel(ctx context.Context, rule *client.Rule, 
 	data.ResponseType = types.StringValue(rule.Attributes.ResponseType)
 	data.ForwardParams = types.BoolValue(rule.Attributes.ForwardParams)
 	data.ForwardPath = types.BoolValue(rule.Attributes.ForwardPath)
+	data.Name = types.StringValue(rule.Attributes.Name)
+	data.DNSStatus = types.StringValue(rule.Attributes.DNSStatus)
+	data.CertificateStatus = types.StringValue(rule.Attributes.CertificateStatus)
 
 	// target_url and source_urls are Required (not Computed), so Terraform
 	// requires the post-apply value to exactly equal what was planned. The

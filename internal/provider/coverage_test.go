@@ -260,6 +260,9 @@ func TestCreateRollsBackOnDNSTimeout(t *testing.T) {
 		"tags":                 tftypes.NewValue(tftypes.Set{ElementType: tftypes.String}, nil),
 		"validate_dns":         tftypes.NewValue(tftypes.Bool, true),
 		"validate_dns_timeout": tftypes.NewValue(tftypes.String, "5ms"),
+		"name":                 tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"dns_status":           tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"certificate_status":   tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
 	})
 
 	createResp := &resource.CreateResponse{}

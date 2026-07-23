@@ -151,6 +151,8 @@ Import is supported using the following syntax:
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
-# Hosts are imported by their Urllo host ID.
+# Hosts are imported by their Urllo host ID. Find it in the Urllo dashboard
+# URL when viewing the host: the host-guid segment of
+# https://dashboard.urllo.com/customer-guid/hosts/host-guid
 terraform import urllo_host.example abc-def
 ```

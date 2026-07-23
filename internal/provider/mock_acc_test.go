@@ -44,6 +44,9 @@ resource "urllo_rule" "test" {
 					resource.TestCheckResourceAttr("urllo_rule.test", "response_type", "moved_permanently"),
 					resource.TestCheckResourceAttr("urllo_rule.test", "forward_params", "false"),
 					resource.TestCheckResourceAttr("urllo_rule.test", "tags.#", "2"),
+					resource.TestCheckResourceAttrSet("urllo_rule.test", "name"),
+					resource.TestCheckResourceAttr("urllo_rule.test", "dns_status", "active"),
+					resource.TestCheckResourceAttr("urllo_rule.test", "certificate_status", "active"),
 				),
 			},
 			{
@@ -164,7 +167,11 @@ data "urllo_hosts" "all" {}
 					// target_url by appending a trailing slash; data sources
 					// faithfully report the server's actual value.
 					resource.TestCheckResourceAttr("data.urllo_rule.by_id", "target_url", "https://dest.example.com/"),
+					resource.TestCheckResourceAttrSet("data.urllo_rule.by_id", "name"),
+					resource.TestCheckResourceAttr("data.urllo_rule.by_id", "dns_status", "active"),
+					resource.TestCheckResourceAttr("data.urllo_rule.by_id", "certificate_status", "active"),
 					resource.TestCheckResourceAttr("data.urllo_rules.all", "rules.#", "1"),
+					resource.TestCheckResourceAttr("data.urllo_rules.all", "rules.0.dns_status", "active"),
 					resource.TestCheckResourceAttr("data.urllo_host.one", "id", "host-1"),
 					resource.TestCheckResourceAttr("data.urllo_host.one", "dns_status", "active"),
 					resource.TestCheckResourceAttr("data.urllo_host.byid", "name", mockHostName),

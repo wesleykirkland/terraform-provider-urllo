@@ -26,6 +26,12 @@ type RuleAttributes struct {
 	SourceURLs    []string `json:"source_urls"`
 	TargetURL     string   `json:"target_url"`
 	Tags          []string `json:"tags,omitempty"`
+
+	// Read-only, API-computed attributes. omitempty keeps them out of the
+	// create/update request bodies, which reuse this struct for the payload.
+	Name              string `json:"name,omitempty"`
+	DNSStatus         string `json:"dns_status,omitempty"`
+	CertificateStatus string `json:"certificate_status,omitempty"`
 }
 
 // Response type values for a rule.

@@ -162,6 +162,9 @@ func (m *mockUrllo) rulesCollection(w http.ResponseWriter, r *http.Request) {
 		m.seq++
 		id := fmt.Sprintf("rule-%d", m.seq)
 		attrs = normalizeRuleAttributes(attrs)
+		attrs.Name = id
+		attrs.DNSStatus = "active"
+		attrs.CertificateStatus = "active"
 		rule := &client.Rule{ID: id, Type: "rule", Attributes: attrs}
 		m.rules[id] = rule
 		writeData(w, http.StatusCreated, rule)
@@ -198,7 +201,14 @@ func (m *mockUrllo) ruleItem(w http.ResponseWriter, r *http.Request, id string) 
 			writeErr(w, http.StatusUnprocessableEntity, "bad body")
 			return
 		}
-		rule.Attributes = normalizeRuleAttributes(attrs)
+		attrs = normalizeRuleAttributes(attrs)
+		// name/dns_status/certificate_status are API-computed and never sent by
+		// the client on update; preserve the existing values rather than
+		// zeroing them out.
+		attrs.Name = rule.Attributes.Name
+		attrs.DNSStatus = rule.Attributes.DNSStatus
+		attrs.CertificateStatus = rule.Attributes.CertificateStatus
+		rule.Attributes = attrs
 		writeData(w, http.StatusOK, rule)
 	case http.MethodDelete:
 		delete(m.rules, id)
