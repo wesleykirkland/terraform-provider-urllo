@@ -35,3 +35,6 @@ website/vendor
 *.winfile eol=crlf
 
 terraform-provider-urllo
+
+# CCE
+settings.json
