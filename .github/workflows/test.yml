@@ -71,11 +71,16 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
       # GitHub's native code coverage only reads Cobertura XML; convert
-      # coverage.out (written by `make cover` above) to that format.
+      # coverage.out (written by `make cover` above) to that format. The tool
+      # is version-locked via tools/go.sum (a floating `go install pkg@version`
+      # isn't reproducible), but it has to run with the repo root as its
+      # working directory to resolve this module's packages - it can't do
+      # that from inside the tools/ module - so it's built from tools/ and
+      # then executed from root.
       - name: Convert coverage to Cobertura XML
         run: |
-          go install github.com/boumenot/gocover-cobertura@v1.5.0
-          gocover-cobertura < coverage.out > coverage.xml
+          (cd tools && go build -o ../.gocover-cobertura github.com/boumenot/gocover-cobertura)
+          ./.gocover-cobertura < coverage.out > coverage.xml
       # fail-on-error is false because this 404s until Code Quality is enabled
       # in repo Settings > Security (admin-only, not a workflow change) - a
       # required check like Unit Tests can't block on that toggle.
