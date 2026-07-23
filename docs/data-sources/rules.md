@@ -3,12 +3,12 @@
 page_title: "urllo_rules Data Source - urllo"
 subcategory: ""
 description: |-
-  Lists redirect rules, optionally filtered by source/target URL and tags.
+  Lists redirect rules, optionally filtered by source/target URL and tags. See the List Rules API docs https://dashboard.urllo.com/docs/api#tag/Rules/operation/listRules for parameter semantics.
 ---
 
 # urllo_rules (Data Source)
 
-Lists redirect rules, optionally filtered by source/target URL and tags.
+Lists redirect rules, optionally filtered by source/target URL and tags. See the [List Rules API docs](https://dashboard.urllo.com/docs/api#tag/Rules/operation/listRules) for parameter semantics.
 
 ## Example Usage
 
@@ -30,10 +30,10 @@ output "matching_rule_ids" {
 
 ### Optional
 
-- `source_query` (String) Filter by source URL (the API `sq` parameter).
-- `tag_match_strategy` (String) How tags are matched: `any` (default) or `all`.
-- `tags` (Set of String) Filter by tags.
-- `target_query` (String) Filter by target URL (the API `tq` parameter).
+- `source_query` (String) Filter by source URL (the API `sq` parameter). See the [List Rules API docs](https://dashboard.urllo.com/docs/api#tag/Rules/operation/listRules).
+- `tag_match_strategy` (String) How tags are matched: `any` (default) or `all` (the API `tag_match_strategy` parameter). See the [List Rules API docs](https://dashboard.urllo.com/docs/api#tag/Rules/operation/listRules).
+- `tags` (Set of String) Filter by tags (the API `tags[]` parameter). See the [List Rules API docs](https://dashboard.urllo.com/docs/api#tag/Rules/operation/listRules).
+- `target_query` (String) Filter by target URL (the API `tq` parameter). See the [List Rules API docs](https://dashboard.urllo.com/docs/api#tag/Rules/operation/listRules).
 
 ### Read-Only
 
