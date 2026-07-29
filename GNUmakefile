@@ -1,35 +1,53 @@
-default: fmt lint install generate
+default: hooks fmt lint install generate
 
-build:
+# Points git at .githooks/ (pre-commit runs gofmt/lint/test/check-docs) so the
+# hook is active without the user ever running `git config` or an install
+# script themselves. This re-applies on every `make` invocation -- the same
+# self-install trick husky uses via npm's "prepare" script, just triggered by
+# `make` instead of `npm install` since that's this repo's equivalent entry
+# point. `git config` here is a cheap, idempotent, repo-local write (like
+# ~/.gitconfig, scoped to .git/config in this clone), not a destructive one.
+HOOKS_DIR := .githooks
+
+hooks:
+	@git config core.hooksPath $(HOOKS_DIR)
+
+build: hooks
 	go build -v ./...
 
 install: build
 	go install -v ./...
 
-lint:
+lint: hooks
 	golangci-lint run
 
-generate:
+generate: hooks
 	cd tools; go generate ./...
 
-fmt:
+fmt: hooks
 	gofmt -s -w -e .
 
-test:
+test: hooks
 	go test -v -cover -timeout=120s -parallel=10 ./...
 
-testacc:
+testacc: hooks
 	TF_ACC=1 go test -v -cover -timeout 120m ./...
+
+# Verifies README.md / terraform/README.md reference every resource, data
+# source, provider config option, and example .tf file that actually exists.
+# See scripts/check-docs.sh for what it checks and why.
+check-docs: hooks
+	scripts/check-docs.sh
 
 # cover runs the full suite (including the mock-backed acceptance tests, which
 # need no credentials) and fails if total coverage drops below COVER_MIN. The
 # remaining uncovered statements are unreachable defensive guards documented in
 # COVERAGE.md.
 COVER_MIN ?= 97.0
-cover:
+cover: hooks
 	TF_ACC=1 go test -timeout 30m -coverprofile=coverage.out ./...
 	@total=$$(go tool cover -func=coverage.out | awk '/^total:/ {print substr($$3, 1, length($$3)-1)}'); \
 	echo "total coverage: $$total% (min $(COVER_MIN)%)"; \
 	awk "BEGIN { exit !($$total >= $(COVER_MIN)) }" || { echo "coverage below $(COVER_MIN)%"; exit 1; }
 
-.PHONY: fmt lint test testacc cover build install generate
+.PHONY: fmt lint test testacc cover build install generate check-docs hooks

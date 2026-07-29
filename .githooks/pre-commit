@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Runs before every commit. Installed automatically -- see the `hooks` target
+# in GNUmakefile, which points git's core.hooksPath at this directory the
+# first time anyone runs any `make` target in this clone. No manual
+# `pre-commit install` step required.
+#
+# Only fast, credential-free checks run here (the same ones CI's "build" and
+# "unit" jobs require); acceptance tests and the coverage gate stay CI-only
+# since they're slow and/or need Urllo credentials. Bypass with
+# `git commit --no-verify` if you really need to.
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+echo "pre-commit: gofmt check"
+unformatted="$(gofmt -s -l -e .)"
+if [[ -n "$unformatted" ]]; then
+	echo "gofmt found unformatted files (run 'make fmt' and stage the result):" >&2
+	echo "$unformatted" >&2
+	exit 1
+fi
+
+echo "pre-commit: lint"
+if command -v golangci-lint >/dev/null 2>&1; then
+	make lint
+else
+	echo "golangci-lint not found on PATH -- skipping locally (CI still runs it)." >&2
+	echo "Install: https://golangci-lint.run/welcome/install/" >&2
+fi
+
+echo "pre-commit: unit tests"
+make test
+
+echo "pre-commit: doc completeness"
+make check-docs
