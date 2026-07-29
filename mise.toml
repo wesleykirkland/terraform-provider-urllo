@@ -1,2 +1,11 @@
 [tools]
+# Kept in sync by hand with: go.mod's `go` directive, the Terraform version
+# used by the "unit"/"generate" CI jobs (the acceptance-test matrix job
+# intentionally overrides this per-leg via hashicorp/setup-terraform instead,
+# since it needs several concrete Terraform CLI versions side by side), and
+# the ruff/coverage pins also used by scripts/run_python_tests.py's CI step.
+go = "1.25.8"
+terraform = "1.15"
 python = "3"
+ruff = "0.16.0"
+"pipx:coverage" = "7.15.2"

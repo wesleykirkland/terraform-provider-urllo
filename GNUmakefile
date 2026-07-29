@@ -47,6 +47,18 @@ testacc: hooks
 check-docs: hooks
 	$(PYTHON) scripts/check_docs.py
 
+# Lints scripts/*.py and .githooks/pre-commit (see ruff.toml). Requires ruff
+# (pip install ruff) -- CI installs it, but this doesn't fail locally if it's
+# missing (see .githooks/pre-commit), matching how `lint` needs golangci-lint.
+lint-py: hooks
+	ruff check .
+
+# Runs scripts/test_check_docs.py, with a coverage report if the `coverage`
+# package is installed (see scripts/run_python_tests.py). No hard dependency
+# beyond the standard library -- coverage is optional.
+test-py: hooks
+	$(PYTHON) scripts/run_python_tests.py
+
 # cover runs the full suite (including the mock-backed acceptance tests, which
 # need no credentials) and fails if total coverage drops below COVER_MIN. The
 # remaining uncovered statements are unreachable defensive guards documented in
@@ -58,4 +70,4 @@ cover: hooks
 	echo "total coverage: $$total% (min $(COVER_MIN)%)"; \
 	awk "BEGIN { exit !($$total >= $(COVER_MIN)) }" || { echo "coverage below $(COVER_MIN)%"; exit 1; }
 
-.PHONY: fmt lint vet test testacc cover build install generate check-docs hooks
+.PHONY: fmt lint vet test testacc cover build install generate check-docs lint-py test-py hooks

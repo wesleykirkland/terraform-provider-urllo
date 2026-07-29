@@ -163,6 +163,12 @@ Requires [Go](http://www.golang.org). To build the provider and run it locally
 against a real account without publishing to a registry, see
 [`terraform/`](terraform/) for a ready-to-run dev-override example.
 
+Tool versions (Go, Terraform, Python, ruff, coverage) are pinned in
+[`mise.toml`](mise.toml) for [mise](https://mise.jdx.dev). CI installs from it
+via `jdx/mise-action`; locally, `mise install` (or just `mise activate`ing
+your shell) gets you the same versions, though it's optional -- everything
+below also works with your own Go/Python/etc. already on `PATH`.
+
 ```shell
 go install                 # build & install the provider binary
 make test                  # unit tests (no credentials required)
@@ -170,6 +176,8 @@ make lint                  # golangci-lint
 make generate              # regenerate docs (requires terraform)
 make check-docs            # verify README.md / terraform/README.md reference every
                             # resource, data source, config option, and example file
+make lint-py               # ruff, for scripts/*.py and .githooks/pre-commit
+make test-py               # unit tests for scripts/check_docs.py (+ coverage if installed)
 make testacc               # acceptance tests (see below)
 ```
 
@@ -180,15 +188,16 @@ Running any `make` target points git's hooks at [`.githooks/`](.githooks/)
 manually -- the same self-configuring approach as husky's npm `prepare`
 script, just triggered by `make` instead of `npm install`. From then on,
 every commit in this clone runs [`.githooks/pre-commit`](.githooks/pre-commit):
-a `gofmt` check, `make lint`, `make test`, and `make check-docs`. `lint` is
-skipped locally (with a warning) if `golangci-lint` isn't on `PATH` -- CI
-still enforces it. None of these need credentials or take long; acceptance
-tests and the coverage gate stay CI-only. Bypass with `git commit --no-verify`
-if you need to.
+a `gofmt` check, `make lint`, `make test`, `make check-docs`, `make test-py`,
+and `make lint-py`. `lint` and `lint-py` are skipped locally (with a warning)
+if `golangci-lint` / `ruff` aren't on `PATH` -- CI still enforces both. None
+of these need credentials or take long; acceptance tests and the coverage
+gate stay CI-only. Bypass with `git commit --no-verify` if you need to.
 
-The hook itself and [`scripts/check_docs.py`](scripts/check_docs.py) are
-plain Python 3 (standard library only, no bash) so they work the same for
-Windows contributors as for macOS/Linux.
+The hook itself and [`scripts/check_docs.py`](scripts/check_docs.py) (tested
+by [`scripts/test_check_docs.py`](scripts/test_check_docs.py), which
+`make test-py` runs) are plain Python 3 (standard library only, no bash) so
+they work the same for Windows contributors as for macOS/Linux.
 
 If `make check-docs` fails after a schema change, either fix the README(s) it
 names by hand or run the `docgen` Claude Code skill (`/docgen`), which

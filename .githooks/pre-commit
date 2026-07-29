@@ -64,6 +64,16 @@ def main() -> int:
     if run_step(root, "doc completeness", ["make", "check-docs"]) != 0:
         return 1
 
+    if run_step(root, "python tests", ["make", "test-py"]) != 0:
+        return 1
+
+    if shutil.which("ruff"):
+        if run_step(root, "python lint", ["make", "lint-py"]) != 0:
+            return 1
+    else:
+        print("ruff not found -- skipping python lint locally (CI still runs it).", file=sys.stderr)
+        print("Install: pip install ruff", file=sys.stderr)
+
     return 0
 
 
