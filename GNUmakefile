@@ -32,8 +32,11 @@ generate: hooks
 fmt: hooks
 	gofmt -s -w -e .
 
-test: hooks
-	go test -v -cover -timeout=120s -parallel=10 ./...
+vet: hooks
+	go vet ./...
+
+test: hooks vet
+	go test -v -race -cover -timeout=120s -parallel=10 ./...
 
 testacc: hooks
 	TF_ACC=1 go test -v -cover -timeout 120m ./...
@@ -55,4 +58,4 @@ cover: hooks
 	echo "total coverage: $$total% (min $(COVER_MIN)%)"; \
 	awk "BEGIN { exit !($$total >= $(COVER_MIN)) }" || { echo "coverage below $(COVER_MIN)%"; exit 1; }
 
-.PHONY: fmt lint test testacc cover build install generate check-docs hooks
+.PHONY: fmt lint vet test testacc cover build install generate check-docs hooks
