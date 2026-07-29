@@ -5,6 +5,7 @@
 # since it needs several concrete Terraform CLI versions side by side), and
 # the ruff/coverage pins also used by scripts/run_python_tests.py's CI step.
 go = "1.25.8"
+golangci-lint = "2.12"
 terraform = "1.15"
 python = "3"
 ruff = "0.16.0"
