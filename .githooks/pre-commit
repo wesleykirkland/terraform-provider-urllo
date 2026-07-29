@@ -1,35 +1,71 @@
-#!/usr/bin/env bash
-# Runs before every commit. Installed automatically -- see the `hooks` target
-# in GNUmakefile, which points git's core.hooksPath at this directory the
-# first time anyone runs any `make` target in this clone. No manual
-# `pre-commit install` step required.
-#
-# Only fast, credential-free checks run here (the same ones CI's "build" and
-# "unit" jobs require); acceptance tests and the coverage gate stay CI-only
-# since they're slow and/or need Urllo credentials. Bypass with
-# `git commit --no-verify` if you really need to.
-set -euo pipefail
+#!/usr/bin/env python3
+"""Runs before every commit. Installed automatically -- see the `hooks`
+target in GNUmakefile, which points git's core.hooksPath at this directory
+the first time anyone runs any `make` target in this clone. No manual
+`pre-commit install` step required.
 
-cd "$(git rev-parse --show-toplevel)"
+Only fast, credential-free checks run here (the same ones CI's "build" and
+"unit" jobs require); acceptance tests and the coverage gate stay CI-only
+since they're slow and/or need Urllo credentials. Bypass with
+`git commit --no-verify` if you really need to.
 
-echo "pre-commit: gofmt check"
-unformatted="$(gofmt -s -l -e .)"
-if [[ -n "$unformatted" ]]; then
-	echo "gofmt found unformatted files (run 'make fmt' and stage the result):" >&2
-	echo "$unformatted" >&2
-	exit 1
-fi
+Plain Python (no bash) so this works the same for Windows contributors,
+who may not have a POSIX shell on PATH.
+"""
 
-echo "pre-commit: lint"
-if command -v golangci-lint >/dev/null 2>&1; then
-	make lint
-else
-	echo "golangci-lint not found on PATH -- skipping locally (CI still runs it)." >&2
-	echo "Install: https://golangci-lint.run/welcome/install/" >&2
-fi
+from __future__ import annotations
 
-echo "pre-commit: unit tests"
-make test
+import shutil
+import subprocess
+import sys
+from pathlib import Path
 
-echo "pre-commit: doc completeness"
-make check-docs
+
+def repo_root() -> Path:
+    out = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return Path(out.stdout.strip())
+
+
+def run_step(root: Path, step: str, cmd: list[str]) -> int:
+    print(f"pre-commit: {step}")
+    return subprocess.run(cmd, cwd=root).returncode
+
+
+def main() -> int:
+    root = repo_root()
+
+    print("pre-commit: gofmt check")
+    result = subprocess.run(
+        ["gofmt", "-s", "-l", "-e", "."],
+        cwd=root,
+        capture_output=True,
+        text=True,
+    )
+    if result.stdout.strip():
+        print("gofmt found unformatted files (run 'make fmt' and stage the result):", file=sys.stderr)
+        print(result.stdout, file=sys.stderr)
+        return 1
+
+    if shutil.which("golangci-lint"):
+        if run_step(root, "lint", ["make", "lint"]) != 0:
+            return 1
+    else:
+        print("golangci-lint not found on PATH -- skipping locally (CI still runs it).", file=sys.stderr)
+        print("Install: https://golangci-lint.run/welcome/install/", file=sys.stderr)
+
+    if run_step(root, "unit tests", ["make", "test"]) != 0:
+        return 1
+
+    if run_step(root, "doc completeness", ["make", "check-docs"]) != 0:
+        return 1
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

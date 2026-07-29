@@ -38,5 +38,9 @@ terraform-provider-urllo
 coverage.out
 coverage.xml
 
+# Python (scripts/check_docs.py, .githooks/pre-commit)
+__pycache__/
+*.pyc
+
 # CCE
 settings.json

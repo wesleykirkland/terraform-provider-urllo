@@ -168,8 +168,31 @@ go install                 # build & install the provider binary
 make test                  # unit tests (no credentials required)
 make lint                  # golangci-lint
 make generate              # regenerate docs (requires terraform)
+make check-docs            # verify README.md / terraform/README.md reference every
+                            # resource, data source, config option, and example file
 make testacc               # acceptance tests (see below)
 ```
+
+### Pre-commit checks
+
+Running any `make` target points git's hooks at [`.githooks/`](.githooks/)
+(the `hooks` target sets `core.hooksPath`), so there's nothing to install
+manually -- the same self-configuring approach as husky's npm `prepare`
+script, just triggered by `make` instead of `npm install`. From then on,
+every commit in this clone runs [`.githooks/pre-commit`](.githooks/pre-commit):
+a `gofmt` check, `make lint`, `make test`, and `make check-docs`. `lint` is
+skipped locally (with a warning) if `golangci-lint` isn't on `PATH` -- CI
+still enforces it. None of these need credentials or take long; acceptance
+tests and the coverage gate stay CI-only. Bypass with `git commit --no-verify`
+if you need to.
+
+The hook itself and [`scripts/check_docs.py`](scripts/check_docs.py) are
+plain Python 3 (standard library only, no bash) so they work the same for
+Windows contributors as for macOS/Linux.
+
+If `make check-docs` fails after a schema change, either fix the README(s) it
+names by hand or run the `docgen` Claude Code skill (`/docgen`), which
+regenerates `docs/` and reconciles both READMEs against the current code.
 
 ### Acceptance tests
 

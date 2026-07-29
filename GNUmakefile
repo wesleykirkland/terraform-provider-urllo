@@ -1,3 +1,8 @@
+# Overridable for contributors whose Python 3 binary isn't named `python3`
+# (e.g. some Windows setups only have `python` on PATH): `make check-docs
+# PYTHON=python`.
+PYTHON ?= python3
+
 default: hooks fmt lint install generate
 
 # Points git at .githooks/ (pre-commit runs gofmt/lint/test/check-docs) so the
@@ -35,9 +40,9 @@ testacc: hooks
 
 # Verifies README.md / terraform/README.md reference every resource, data
 # source, provider config option, and example .tf file that actually exists.
-# See scripts/check-docs.sh for what it checks and why.
+# See scripts/check_docs.py for what it checks and why.
 check-docs: hooks
-	scripts/check-docs.sh
+	$(PYTHON) scripts/check_docs.py
 
 # cover runs the full suite (including the mock-backed acceptance tests, which
 # need no credentials) and fails if total coverage drops below COVER_MIN. The
