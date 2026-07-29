@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated
 automatically from Conventional Commits by git-cliff.
 
+## [1.1.0] - 2026-07-29
+
+### Features
+
+- Mise-managed toolchain, Python test tooling, and doc-consistency checks (#7) ([#7](https://github.com/wesleykirkland/terraform-provider-urllo/pull/7))
+
 ## [0.1.1] - 2026-07-23
 
 ### Bug Fixes
