@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) Wesley Kirkland-Daily
+# SPDX-License-Identifier: MPL-2.0
+
 """Runs this repo's Python unit tests (currently just test_check_docs.py).
 
 If the `coverage` CLI is on PATH, also writes a Cobertura-format XML report
@@ -34,12 +37,10 @@ TEST_PATTERN = "test_*.py"
 # large enough to make one meaningful; 0 means "report only, never fail".
 COVERAGE_MIN = 100.0
 
-OMIT = ",".join(
-    [
-        str(SCRIPTS_DIR / TEST_PATTERN),
-        str(SCRIPTS_DIR / "run_python_tests.py"),
-    ]
-)
+# Only the test files themselves are excluded -- run_python_tests.py's own
+# logic is covered by scripts/test_run_python_tests.py (mocking subprocess.run
+# rather than actually spawning nested subprocesses).
+OMIT = str(SCRIPTS_DIR / TEST_PATTERN)
 
 
 def run_plain() -> int:
@@ -96,4 +97,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main())  # pragma: no cover

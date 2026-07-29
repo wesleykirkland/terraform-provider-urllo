@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) Wesley Kirkland-Daily
+# SPDX-License-Identifier: MPL-2.0
+
 """Unit tests for check_docs.py.
 
 Run via `make test-py`, or directly with:

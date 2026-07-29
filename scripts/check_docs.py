@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) Wesley Kirkland-Daily
+# SPDX-License-Identifier: MPL-2.0
+
 """Checks that README.md / terraform/README.md reference every resource,
 data source, provider config option, and example .tf file that actually
 exists in the code, and that the relevant markdown files are structurally
