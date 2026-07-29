@@ -21,12 +21,15 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: 'go.mod'
-          cache: true
+      # Utilize mise for CI and local
+      - uses: jdx/mise-action@9e7f7633ff6f6d6048a9418a68d48f288f50eb14 # v4.2.3
       - run: go mod download
-      - run: go build -v .
+      - name: make build
+        run: make build
+      - name: make lint-py
+        run: make lint-py
+      # Equivalent to `make lint` (both just run `golangci-lint run`), but
+      # via the action so lint findings get inline PR annotations + caching.
       - name: Run linters
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
@@ -46,33 +49,36 @@ jobs:
         with:
           # SonarCloud needs full history for SCM blame / new-code analysis.
           fetch-depth: 0
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: 'go.mod'
-          cache: true
+      - uses: jdx/mise-action@9e7f7633ff6f6d6048a9418a68d48f288f50eb14 # v4.2.3
       - run: go mod download
-      - name: go vet
-        run: go vet ./...
-      - name: go test (race, cover)
-        run: go test -race -cover ./...
-      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
-        with:
-          terraform_wrapper: false
-          terraform_version: "~1.15"
+      # `make test` covers both `go vet ./...` and `go test -race -cover ./...`
+      # (test depends on vet -- see GNUmakefile), so this is the same check a
+      # contributor's pre-commit hook and `make test` run locally.
+      - name: make test
+        run: make test
       # Enforce a coverage floor. The mock-backed acceptance tests run without
       # credentials, so this covers the full CRUD path. See COVERAGE.md.
       - name: coverage gate
         run: make cover
-      # Feeds coverage.out (written by `make cover` above) to SonarCloud so
-      # the "SonarCloud Code Analysis" check posts on the PR.
+      # Runs scripts/test_check_docs.py and writes a Cobertura-format
+      # coverage.xml (see scripts/run_python_tests.py) alongside Go's
+      # coverage.out, before the Sonar/Codecov steps below so both get picked
+      # up in the same scan/upload.
+      - name: make test-py
+        run: make test-py
+      # Feeds coverage.out (Go, from `make cover`) and coverage.xml (Python,
+      # from `make test-py`) to SonarCloud so the "SonarCloud Code Analysis"
+      # check posts on the PR. See sonar-project.properties for the
+      # reportPaths wiring.
       - name: SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
-      # Feeds coverage.out (written by `make cover` above) to Codecov for PR
-      # coverage reports. fail_ci_if_error defaults to false, so a missing/bad
-      # CODECOV_TOKEN warns rather than failing this required check.
+      # Feeds coverage.out and coverage.xml to Codecov for PR coverage
+      # reports; the uploader auto-detects both when `files:` isn't given.
+      # fail_ci_if_error defaults to false, so a missing/bad CODECOV_TOKEN
+      # warns rather than failing this required check.
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@5975040f7f7d40edaff8d784b576fd65ae95c073 # v5.5.5
         with:
@@ -82,24 +88,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: 'go.mod'
-          cache: true
-      # We need the latest version of Terraform for our documentation generation to use
-      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
-        with:
-          terraform_wrapper: false
-          terraform_version: "~1.15"
+      # go + terraform, pinned in mise.toml, are both needed for `make
+      # generate` (tfplugindocs + `terraform fmt` on examples/).
+      - uses: jdx/mise-action@9e7f7633ff6f6d6048a9418a68d48f288f50eb14 # v4.2.3
       - run: make generate
       - name: git diff
         run: |
           git diff --compact-summary --exit-code || \
             (echo; echo "Unexpected difference in directories after code generation. Run 'make generate' command and commit."; exit 1)
+      # Backstop for scripts/check_docs.py: the pre-commit hook (.githooks/)
+      # only runs once a contributor has run `make` at least once and hasn't
+      # passed --no-verify, so this catches README drift regardless.
+      - name: check-docs
+        run: make check-docs
 
   # Run acceptance tests in a matrix with Terraform CLI versions. These require
   # Urllo credentials configured as repository secrets; without them the tests
   # skip themselves.
+  #
+  # Deliberately NOT using mise here, unlike the jobs above: this job needs
+  # several distinct Terraform CLI versions across its matrix legs, which is
+  # exactly what hashicorp/setup-terraform's terraform_version input is for.
+  # mise.toml pins one static Terraform version for the other jobs' single,
+  # fixed use case -- overriding it per matrix leg would need extra scripting
+  # for no real benefit over the purpose-built action.
   test:
     name: 'Acceptance Tests: Terraform ${{ matrix.terraform }}'
     needs: build
@@ -124,6 +136,10 @@ jobs:
           terraform_version: ${{ matrix.terraform }}
           terraform_wrapper: false
       - run: go mod download
+      # Deliberately not `make testacc`: that target runs `./...` at a 120m
+      # timeout, which would needlessly re-run internal/client's tests (which
+      # don't vary by Terraform CLI version) on every leg of this matrix.
+      # Scoped to internal/provider/ with a shorter per-leg timeout instead.
       - env:
           TF_ACC: "1"
           URLLO_API_KEY: ${{ secrets.URLLO_API_KEY }}

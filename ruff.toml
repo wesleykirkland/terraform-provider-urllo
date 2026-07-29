@@ -1,0 +1,10 @@
+# Lints scripts/*.py and the (extensionless, but Python) .githooks/pre-commit
+# hook. Pinned explicitly rather than relying on ruff's default rule set,
+# which can shift between versions/machines: E4/E7/E9 (pyflakes-adjacent
+# pycodestyle checks) + F (pyflakes) is ruff's own documented default -- kept
+# here as an explicit floor rather than an assumption.
+target-version = "py310"
+extend-include = [".githooks/pre-commit"]
+
+[lint]
+select = ["E4", "E7", "E9", "F"]

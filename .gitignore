@@ -35,8 +35,16 @@ website/vendor
 *.winfile eol=crlf
 
 terraform-provider-urllo
+
+# Code Coverage Reports
 coverage.out
 coverage.xml
+.coverage
+
+# Python (scripts/check_docs.py, .githooks/pre-commit)
+__pycache__/
+*.pyc
+.ruff_cache/
 
 # CCE
 settings.json

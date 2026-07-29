@@ -120,7 +120,6 @@ jobs:
           directory: ${{ env.TF_WORKING_DIR }}
           framework: terraform
           output_format: sarif
-          output_file_path: terraform-checkov.sarif
         continue-on-error: true
 
       - name: Upload Checkov results
