@@ -27,6 +27,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+README_NAME = "README.md"
+
 
 def repo_root() -> Path:
     out = subprocess.run(
@@ -103,7 +105,7 @@ def check_provider_config(root: Path, readme: str) -> list[str]:
 # "What the example does" list.
 def check_terraform_examples(root: Path) -> list[str]:
     failures: list[str] = []
-    tf_readme = (root / "terraform" / "README.md").read_text(encoding="utf-8")
+    tf_readme = (root / "terraform" / README_NAME).read_text(encoding="utf-8")
     for tf_file in sorted((root / "terraform").glob("*.tf")):
         if f"`{tf_file.name}`" not in tf_readme:
             failures.append(f"terraform/README.md does not mention `{tf_file.name}`")
@@ -169,7 +171,7 @@ def _check_relative_links(rel: Path, text: str, directory: Path) -> list[str]:
 
 def check_markdown_format(root: Path) -> list[str]:
     failures: list[str] = []
-    files = [root / "README.md", root / "terraform" / "README.md"]
+    files = [root / README_NAME, root / "terraform" / README_NAME]
     docs_dir = root / "docs"
     if docs_dir.is_dir():
         files += sorted(docs_dir.rglob("*.md"))
@@ -207,7 +209,7 @@ def check_generated_headers(root: Path) -> list[str]:
 
 
 def run_all_checks(root: Path) -> list[str]:
-    readme = (root / "README.md").read_text(encoding="utf-8")
+    readme = (root / README_NAME).read_text(encoding="utf-8")
     failures: list[str] = []
     failures += check_resources_and_data_sources(root, readme)
     failures += check_provider_config(root, readme)
