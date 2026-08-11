@@ -12,6 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -86,30 +89,34 @@ func (r *HostResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				MarkdownDescription: "Whether automatic SSL certificate provisioning is enabled.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 			},
 			"custom_404_body": schema.StringAttribute{
 				MarkdownDescription: "Custom HTML response body served when no redirect matches, in effect only " +
 					"when `not_found_action.response_code` is `404`. Requires `not_found_action` to be configured " +
 					"(at least `response_code = 404`); it is not applied otherwise. Read back from Urllo on refresh, " +
 					"so content drift is detected like any other attribute; null when no custom body is set.",
-				Optional:  true,
-				Computed:  true,
-				Sensitive: true,
+				Optional:      true,
+				Computed:      true,
+				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"match_options": schema.SingleNestedAttribute{
 				MarkdownDescription: "How source URLs are matched.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers:       []planmodifier.Object{objectplanmodifier.UseStateForUnknown()},
 				Attributes: map[string]schema.Attribute{
 					"case_insensitive": schema.BoolAttribute{
 						MarkdownDescription: "Ignore case when matching paths and query parameters.",
 						Optional:            true,
 						Computed:            true,
+						PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 					},
 					"slash_insensitive": schema.BoolAttribute{
 						MarkdownDescription: "Ignore trailing forward slashes on paths.",
 						Optional:            true,
 						Computed:            true,
+						PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 					},
 				},
 			},
@@ -117,32 +124,38 @@ func (r *HostResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				MarkdownDescription: "Behaviour when no matching redirect is found.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers:       []planmodifier.Object{objectplanmodifier.UseStateForUnknown()},
 				Attributes: map[string]schema.Attribute{
 					"forward_params": schema.BoolAttribute{
 						MarkdownDescription: "Copy source query parameters to the target URL.",
 						Optional:            true,
 						Computed:            true,
+						PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 					},
 					"forward_path": schema.BoolAttribute{
 						MarkdownDescription: "Copy the source path to the target URL.",
 						Optional:            true,
 						Computed:            true,
+						PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 					},
 					"response_code": schema.Int64Attribute{
 						MarkdownDescription: "Response code when no match is found: 301, 302, or 404.",
 						Optional:            true,
 						Computed:            true,
 						Validators:          []validator.Int64{int64validator.OneOf(301, 302, 404)},
+						PlanModifiers:       []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
 					},
 					"response_url": schema.StringAttribute{
 						MarkdownDescription: "Redirect target when `response_code` is 301 or 302 and no match is found.",
 						Optional:            true,
 						Computed:            true,
+						PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 					},
 					"custom_404_body_present": schema.BoolAttribute{
 						MarkdownDescription: "Whether a custom 404 body is currently set on the host. See the " +
 							"top-level `custom_404_body` attribute for the content itself.",
-						Computed: true,
+						Computed:      true,
+						PlanModifiers: []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 					},
 				},
 			},
@@ -150,48 +163,57 @@ func (r *HostResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				MarkdownDescription: "HTTPS and HSTS security settings.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers:       []planmodifier.Object{objectplanmodifier.UseStateForUnknown()},
 				Attributes: map[string]schema.Attribute{
 					"https_upgrade": schema.BoolAttribute{
 						MarkdownDescription: "Upgrade HTTP requests to HTTPS.",
 						Optional:            true,
 						Computed:            true,
+						PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 					},
 					"prevent_foreign_embedding": schema.BoolAttribute{
 						MarkdownDescription: "Prevent foreign embedding and JavaScript.",
 						Optional:            true,
 						Computed:            true,
+						PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 					},
 					"hsts_include_sub_domains": schema.BoolAttribute{
 						MarkdownDescription: "Apply HSTS to all subdomains.",
 						Optional:            true,
 						Computed:            true,
+						PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 					},
 					"hsts_max_age": schema.Int64Attribute{
 						MarkdownDescription: "HSTS max-age in seconds.",
 						Optional:            true,
 						Computed:            true,
+						PlanModifiers:       []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
 					},
 					"hsts_preload": schema.BoolAttribute{
 						MarkdownDescription: "Include the preload directive in HSTS headers.",
 						Optional:            true,
 						Computed:            true,
+						PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 					},
 				},
 			},
 			"dns_status": schema.StringAttribute{
 				MarkdownDescription: "DNS configuration status: `active`, `invalid`, or `requires_verification`.",
 				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"certificate_status": schema.StringAttribute{
 				MarkdownDescription: "Current certificate status.",
 				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"dns_tested_at": schema.StringAttribute{
 				MarkdownDescription: "When the host's DNS was last tested. Null unless the provider's " +
 					"`include_dns_tested_at` is set to `true`: Urllo re-tests DNS on its own schedule, so by " +
 					"default this is left out of state to avoid it showing as changed outside of Terraform on " +
 					"every refresh.",
-				Computed: true,
+				Computed:      true,
+				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"required_dns_entries": requiredDNSSchema(),
 			"detected_dns_entries": detectedDNSSchema(),

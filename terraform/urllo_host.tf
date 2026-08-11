@@ -1,6 +1,6 @@
 # Does not require an import as the host already exists in Urllo
 resource "urllo_host" "example3" {
-  name = one(urllo_rule.example3.source_urls)
+  name = trim(one(urllo_rule.example3.source_urls), "/") # Urllo normalizes the hostname with a trailing /
 
   acme_enabled = true
 

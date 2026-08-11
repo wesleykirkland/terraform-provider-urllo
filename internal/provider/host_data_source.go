@@ -64,8 +64,7 @@ func (d *HostDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 			},
 			"acme_enabled": dschema.BoolAttribute{Computed: true, MarkdownDescription: "Whether automatic SSL is enabled."},
 			"custom_404_body": dschema.StringAttribute{
-				Computed:  true,
-				Sensitive: true,
+				Computed: true,
 				MarkdownDescription: "Custom HTML response body served when no redirect matches, in effect only " +
 					"when `not_found_action.response_code` is `404`. Null when no custom body is set.",
 			},

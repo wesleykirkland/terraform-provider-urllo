@@ -26,3 +26,24 @@ resource "urllo_host" "example" {
     hsts_preload              = true
   }
 }
+
+# Serves a custom body instead of Urllo's default page when no redirect rule
+# matches. custom_404_body only takes effect when not_found_action.response_code
+# is 404. not_found_action and security are independent settings applicable to
+# both host configurations on this page — they're split across these two
+# examples for readability, not because either is tied to one configuration.
+resource "urllo_host" "custom_404" {
+  name = "status.example.com"
+
+  not_found_action = {
+    response_code = 404
+  }
+
+  custom_404_body = <<-HTML
+    <!doctype html>
+    <html>
+      <head><title>Page not found</title></head>
+      <body><h1>404 - Page not found</h1></body>
+    </html>
+  HTML
+}
