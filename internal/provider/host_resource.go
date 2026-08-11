@@ -21,12 +21,6 @@ import (
 	"github.com/wesleykirkland/terraform-provider-urllo/internal/client"
 )
 
-// getHostAPIDocsLink points at the API reference for the endpoint host reads
-// call, so schema descriptions can cite it without repeating the URL. It's
-// the source of truth for why custom_404_body's content can't be diffed: the
-// API documents the body as set-only, never returned by a read.
-const getHostAPIDocsLink = "[Get Host API docs](https://dashboard.urllo.com/docs/api#tag/Hosts/operation/getHost)"
-
 var (
 	_ resource.Resource                   = &HostResource{}
 	_ resource.ResourceWithImportState    = &HostResource{}
@@ -96,11 +90,10 @@ func (r *HostResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			"custom_404_body": schema.StringAttribute{
 				MarkdownDescription: "Custom HTML response body served when no redirect matches, in effect only " +
 					"when `not_found_action.response_code` is `404`. Requires `not_found_action` to be configured " +
-					"(at least `response_code = 404`); it is not applied otherwise. Write-only: per the " +
-					getHostAPIDocsLink + ", the API can only set this content, never return it, so this value is " +
-					"not refreshed from Urllo and content drift can't be detected — use " +
-					"`not_found_action.custom_404_body_present` to detect whether a body is currently set at all.",
+					"(at least `response_code = 404`); it is not applied otherwise. Read back from Urllo on refresh, " +
+					"so content drift is detected like any other attribute; null when no custom body is set.",
 				Optional:  true,
+				Computed:  true,
 				Sensitive: true,
 			},
 			"match_options": schema.SingleNestedAttribute{
@@ -147,9 +140,8 @@ func (r *HostResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 						Computed:            true,
 					},
 					"custom_404_body_present": schema.BoolAttribute{
-						MarkdownDescription: "Whether a custom 404 body is currently set on the host. The body " +
-							"content itself is write-only per the " + getHostAPIDocsLink + " (see the top-level " +
-							"`custom_404_body` attribute); this flag is how drift in its presence can be detected.",
+						MarkdownDescription: "Whether a custom 404 body is currently set on the host. See the " +
+							"top-level `custom_404_body` attribute for the content itself.",
 						Computed: true,
 					},
 				},
@@ -355,13 +347,13 @@ func (r *HostResource) applyUpdate(ctx context.Context, id string, data *HostRes
 	return host
 }
 
-// applyHostToModel copies server-returned values into the model. Custom404Body
-// is preserved as-is since the API never returns it.
+// applyHostToModel copies server-returned values into the model.
 func (r *HostResource) applyHostToModel(host *client.Host, data *HostResourceModel, diags *diag.Diagnostics) {
 	a := host.Attributes
 	data.ID = types.StringValue(host.ID)
 	data.Name = types.StringValue(a.Name)
 	data.ACMEEnabled = types.BoolValue(a.ACMEEnabled)
+	data.Custom404Body = custom404BodyValue(a.NotFoundAction)
 	data.DNSStatus = types.StringValue(a.DNSStatus)
 	data.CertificateStatus = types.StringValue(a.CertificateStatus)
 	if r.includeDNSTestedAt {

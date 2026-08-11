@@ -33,6 +33,7 @@ type HostDataSourceModel struct {
 	ID                 types.String `tfsdk:"id"`
 	Name               types.String `tfsdk:"name"`
 	ACMEEnabled        types.Bool   `tfsdk:"acme_enabled"`
+	Custom404Body      types.String `tfsdk:"custom_404_body"`
 	MatchOptions       types.Object `tfsdk:"match_options"`
 	NotFoundAction     types.Object `tfsdk:"not_found_action"`
 	Security           types.Object `tfsdk:"security"`
@@ -61,7 +62,13 @@ func (d *HostDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 				Optional:            true,
 				Computed:            true,
 			},
-			"acme_enabled":       dschema.BoolAttribute{Computed: true, MarkdownDescription: "Whether automatic SSL is enabled."},
+			"acme_enabled": dschema.BoolAttribute{Computed: true, MarkdownDescription: "Whether automatic SSL is enabled."},
+			"custom_404_body": dschema.StringAttribute{
+				Computed:  true,
+				Sensitive: true,
+				MarkdownDescription: "Custom HTML response body served when no redirect matches, in effect only " +
+					"when `not_found_action.response_code` is `404`. Null when no custom body is set.",
+			},
 			"match_options":      dsMatchOptionsSchema(),
 			"not_found_action":   dsNotFoundActionSchema(),
 			"security":           dsSecuritySchema(),
@@ -117,6 +124,7 @@ func (d *HostDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	data.ID = types.StringValue(host.ID)
 	data.Name = types.StringValue(a.Name)
 	data.ACMEEnabled = types.BoolValue(a.ACMEEnabled)
+	data.Custom404Body = custom404BodyValue(a.NotFoundAction)
 	data.DNSStatus = types.StringValue(a.DNSStatus)
 	data.CertificateStatus = types.StringValue(a.CertificateStatus)
 	if d.includeDNSTestedAt {

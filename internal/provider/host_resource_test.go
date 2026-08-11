@@ -40,10 +40,9 @@ func TestAccHostResource(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            "urllo_host.test",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"custom_404_body"},
+				ResourceName:      "urllo_host.test",
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})

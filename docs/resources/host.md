@@ -53,7 +53,7 @@ resource "urllo_host" "example" {
 ### Optional
 
 - `acme_enabled` (Boolean) Whether automatic SSL certificate provisioning is enabled.
-- `custom_404_body` (String, Sensitive) Custom HTML response body served when no redirect matches, in effect only when `not_found_action.response_code` is `404`. Requires `not_found_action` to be configured (at least `response_code = 404`); it is not applied otherwise. Write-only: per the [Get Host API docs](https://dashboard.urllo.com/docs/api#tag/Hosts/operation/getHost), the API can only set this content, never return it, so this value is not refreshed from Urllo and content drift can't be detected — use `not_found_action.custom_404_body_present` to detect whether a body is currently set at all.
+- `custom_404_body` (String, Sensitive) Custom HTML response body served when no redirect matches, in effect only when `not_found_action.response_code` is `404`. Requires `not_found_action` to be configured (at least `response_code = 404`); it is not applied otherwise. Read back from Urllo on refresh, so content drift is detected like any other attribute; null when no custom body is set.
 - `match_options` (Attributes) How source URLs are matched. (see [below for nested schema](#nestedatt--match_options))
 - `not_found_action` (Attributes) Behaviour when no matching redirect is found. (see [below for nested schema](#nestedatt--not_found_action))
 - `security` (Attributes) HTTPS and HSTS security settings. (see [below for nested schema](#nestedatt--security))
@@ -88,7 +88,7 @@ Optional:
 
 Read-Only:
 
-- `custom_404_body_present` (Boolean) Whether a custom 404 body is currently set on the host. The body content itself is write-only per the [Get Host API docs](https://dashboard.urllo.com/docs/api#tag/Hosts/operation/getHost) (see the top-level `custom_404_body` attribute); this flag is how drift in its presence can be detected.
+- `custom_404_body_present` (Boolean) Whether a custom 404 body is currently set on the host. See the top-level `custom_404_body` attribute for the content itself.
 
 
 <a id="nestedatt--security"></a>

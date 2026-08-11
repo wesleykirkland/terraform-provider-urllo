@@ -87,6 +87,15 @@ func notFoundActionToObject(nfa *client.NotFoundAction, diags *diag.Diagnostics)
 	return obj
 }
 
+// custom404BodyValue extracts the custom 404 body from a host's
+// not_found_action, if any is set.
+func custom404BodyValue(nfa *client.NotFoundAction) types.String {
+	if nfa == nil {
+		return types.StringNull()
+	}
+	return stringPtrValue(nfa.Custom404Body)
+}
+
 func securityToObject(s *client.Security, diags *diag.Diagnostics) types.Object {
 	if s == nil {
 		return types.ObjectNull(securityAttrTypes)
