@@ -44,9 +44,10 @@ type NotFoundAction struct {
 	ForwardParams bool `json:"forward_params"`
 	ForwardPath   bool `json:"forward_path"`
 	// Custom404BodyPresent is read-only: whether a custom body is currently
-	// set. The API never returns the body content itself.
+	// set.
 	Custom404BodyPresent bool `json:"custom_404_body_present,omitempty"`
-	// Custom404Body is write-only and only takes effect when ResponseCode is
+	// Custom404Body holds the custom 404 HTML content. It's returned on reads
+	// (null when unset) and only takes effect on writes when ResponseCode is
 	// 404. It belongs here, nested under not_found_action, not at the
 	// top level of a host update payload.
 	Custom404Body *string `json:"custom_404_body,omitempty"`

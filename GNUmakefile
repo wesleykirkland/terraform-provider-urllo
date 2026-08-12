@@ -59,6 +59,13 @@ lint-py: hooks
 test-py: hooks
 	$(PYTHON) scripts/run_python_tests.py
 
+# Warns (never fails, here or in CI -- see the "api-spec-drift" job) when the
+# live Urllo OpenAPI spec has moved past the version recorded in
+# API_SPEC_VERSION. Urllo doesn't publish an API changelog, so this is the
+# only drift signal available. See scripts/check_api_spec_version.py.
+check-api-spec: hooks
+	$(PYTHON) scripts/check_api_spec_version.py
+
 # cover runs the full suite (including the mock-backed acceptance tests, which
 # need no credentials) and fails if total coverage drops below COVER_MIN. The
 # remaining uncovered statements are unreachable defensive guards documented in
@@ -70,4 +77,4 @@ cover: hooks
 	echo "total coverage: $$total% (min $(COVER_MIN)%)"; \
 	awk "BEGIN { exit !($$total >= $(COVER_MIN)) }" || { echo "coverage below $(COVER_MIN)%"; exit 1; }
 
-.PHONY: fmt lint vet test testacc cover build install generate check-docs lint-py test-py hooks
+.PHONY: fmt lint vet test testacc cover build install generate check-docs check-api-spec lint-py test-py hooks

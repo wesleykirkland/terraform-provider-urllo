@@ -82,8 +82,7 @@ and `mirror.tfrc.example` are committed templates.
   `example3`), including DNS validation, forwarding, and tags.
 - `urllo_host.tf` — manages two real `urllo_host` resources: `example3`
   (match options, not-found forwarding, security/HSTS settings) and
-  `custom_404` (a custom 404 body, which is write-only — the API never
-  returns the body text, only whether one is present).
+  `custom_404` (a custom 404 body).
 - `import.tf` — `import` blocks bringing the two existing rules above under
   Terraform management by ID.
 - `outputs.tf` — prints host names, rule count, the custom-404 drift check,

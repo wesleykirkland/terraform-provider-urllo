@@ -89,6 +89,21 @@ jobs:
           tag_prefix: v
           dry_run: true
 
+      # git-cliff-action splices its `args` input into a shell command
+      # internally, so validate the computed tag is a plain vX.Y.Z string
+      # before it flows in below -- guards against expression/command
+      # injection if a future change to the version-compute step ever lets
+      # new_tag carry shell metacharacters.
+      - name: Validate computed tag
+        if: steps.version.outputs.new_tag != ''
+        env:
+          NEW_TAG: ${{ steps.version.outputs.new_tag }}
+        run: |
+          if [[ ! "$NEW_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Computed tag '$NEW_TAG' is not a plain vX.Y.Z version; refusing to use it." >&2
+            exit 1
+          fi
+
       - name: Generate changelog
         if: steps.version.outputs.new_tag != ''
         uses: orhun/git-cliff-action@f50e11560dce63f7c33227798f90b924471a88b5 # v4.8.0

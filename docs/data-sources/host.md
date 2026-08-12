@@ -35,6 +35,7 @@ output "host_dns_status" {
 
 - `acme_enabled` (Boolean) Whether automatic SSL is enabled.
 - `certificate_status` (String) Certificate status.
+- `custom_404_body` (String) Custom HTML response body served when no redirect matches, in effect only when `not_found_action.response_code` is `404`. Null when no custom body is set.
 - `detected_dns_entries` (Attributes List) Currently detected DNS records. (see [below for nested schema](#nestedatt--detected_dns_entries))
 - `dns_status` (String) DNS configuration status.
 - `dns_tested_at` (String) When DNS was last tested. Null unless the provider's `include_dns_tested_at` is set to `true`; see its schema description for why.
@@ -66,7 +67,7 @@ Read-Only:
 
 Read-Only:
 
-- `custom_404_body_present` (Boolean) Whether a custom 404 body is currently set. The body content itself is write-only per the [Get Host API docs](https://dashboard.urllo.com/docs/api#tag/Hosts/operation/getHost).
+- `custom_404_body_present` (Boolean) Whether a custom 404 body is currently set. See the top-level `custom_404_body` attribute for the content itself.
 - `forward_params` (Boolean) Copy source query parameters.
 - `forward_path` (Boolean) Copy the source path.
 - `response_code` (Number) Response code (301/302/404).

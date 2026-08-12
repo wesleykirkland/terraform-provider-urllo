@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/wesleykirkland/terraform-provider-urllo/internal/client"
 )
@@ -64,4 +65,13 @@ func stringsToSet(ctx context.Context, values []string, diags *diag.Diagnostics)
 	set, d := types.SetValueFrom(ctx, types.StringType, values)
 	diags.Append(d...)
 	return set
+}
+
+// loadPlanAndState reads the plan and state models for an Update call,
+// appending diagnostics to resp. It reports whether both were read without
+// error.
+func loadPlanAndState[T any](ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse, plan, state *T) bool {
+	resp.Diagnostics.Append(req.Plan.Get(ctx, plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, state)...)
+	return !resp.Diagnostics.HasError()
 }

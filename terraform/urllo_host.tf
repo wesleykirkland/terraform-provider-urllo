@@ -1,6 +1,6 @@
 # Does not require an import as the host already exists in Urllo
 resource "urllo_host" "example3" {
-  name = one(urllo_rule.example3.source_urls)
+  name = trim(one(urllo_rule.example3.source_urls), "/") # Urllo normalizes the hostname with a trailing /
 
   acme_enabled = true
 
@@ -27,9 +27,7 @@ resource "urllo_host" "example3" {
 
 # Serves a custom body instead of Urllo's default page when no redirect rule
 # matches. custom_404_body only takes effect when not_found_action.response_code
-# is 404, and is write-only: the API GET never returns the content, so Terraform
-# can't detect changes to the body text itself, only whether one is present via
-# not_found_action.custom_404_body_present.
+# is 404
 resource "urllo_host" "custom_404" {
   name = "urllo.unleashthe.cloud"
 

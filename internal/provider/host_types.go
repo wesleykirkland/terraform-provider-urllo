@@ -87,6 +87,38 @@ func notFoundActionToObject(nfa *client.NotFoundAction, diags *diag.Diagnostics)
 	return obj
 }
 
+// custom404BodyValue extracts the custom 404 body from a host's
+// not_found_action, if any is set.
+func custom404BodyValue(nfa *client.NotFoundAction) types.String {
+	if nfa == nil {
+		return types.StringNull()
+	}
+	return stringPtrValue(nfa.Custom404Body)
+}
+
+// populateHostModel copies server-returned host attributes into data. It is
+// shared by the host resource and host data source, whose models are
+// identical.
+func populateHostModel(host *client.Host, data *HostResourceModel, includeDNSTestedAt bool, diags *diag.Diagnostics) {
+	a := host.Attributes
+	data.ID = types.StringValue(host.ID)
+	data.Name = types.StringValue(a.Name)
+	data.ACMEEnabled = types.BoolValue(a.ACMEEnabled)
+	data.Custom404Body = custom404BodyValue(a.NotFoundAction)
+	data.DNSStatus = types.StringValue(a.DNSStatus)
+	data.CertificateStatus = types.StringValue(a.CertificateStatus)
+	if includeDNSTestedAt {
+		data.DNSTestedAt = stringPtrValue(a.DNSTestedAt)
+	} else {
+		data.DNSTestedAt = types.StringNull()
+	}
+	data.MatchOptions = matchOptionsToObject(a.MatchOptions, diags)
+	data.NotFoundAction = notFoundActionToObject(a.NotFoundAction, diags)
+	data.Security = securityToObject(a.Security, diags)
+	data.RequiredDNSEntries = requiredDNSToObject(a.RequiredDNSEntries, diags)
+	data.DetectedDNSEntries = detectedDNSToList(a.DetectedDNSEntries, diags)
+}
+
 func securityToObject(s *client.Security, diags *diag.Diagnostics) types.Object {
 	if s == nil {
 		return types.ObjectNull(securityAttrTypes)

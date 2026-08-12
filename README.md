@@ -130,9 +130,7 @@ resource "urllo_host" "example" {
     hsts_preload              = true
   }
 
-  # Only used when not_found_action.response_code = 404. Write-only: the API
-  # never returns this content, so drift in the body text can't be detected —
-  # only whether a body is present, via not_found_action.custom_404_body_present.
+  # Only used when not_found_action.response_code = 404
   # custom_404_body = "<html>...</html>"
 }
 ```

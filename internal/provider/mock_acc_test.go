@@ -125,10 +125,9 @@ resource "urllo_host" "test" {
 				Check: resource.TestCheckResourceAttr("urllo_host.test", "acme_enabled", "false"),
 			},
 			{
-				ResourceName:            "urllo_host.test",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"custom_404_body"},
+				ResourceName:      "urllo_host.test",
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -167,10 +166,12 @@ data "urllo_host" "by_name" {
 	})
 }
 
-// TestAccMockHostCustom404 covers the fix for custom_404_body being nested
-// under not_found_action in the API request (it was previously sent as a
-// top-level field and silently dropped). custom_404_body_present is the only
-// signal Terraform has for drift, since the body content itself is write-only.
+// TestAccMockHostCustom404 covers custom_404_body being nested under
+// not_found_action in the API request (the API only accepts it there, not at
+// the top level of a host update payload) while still being surfaced as a
+// top-level resource attribute. Both custom_404_body and
+// custom_404_body_present are read back from the API, so drift in either is
+// detected.
 //
 // The second step verifies that drift actually surfaces on the resource
 // itself (not just a separate data source lookup): it flips the presence
@@ -200,6 +201,7 @@ resource "urllo_host" "test" {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("urllo_host.test", "not_found_action.response_code", "404"),
 					resource.TestCheckResourceAttr("urllo_host.test", "not_found_action.custom_404_body_present", "true"),
+					resource.TestCheckResourceAttr("urllo_host.test", "custom_404_body", "<html><body>custom</body></html>"),
 				),
 			},
 			{

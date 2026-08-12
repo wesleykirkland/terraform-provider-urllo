@@ -40,3 +40,22 @@ change separately. Never echo back unchanged code the user already has.
 
 Code blocks, file paths, commands, error messages: always written in full.
 Security warnings and destructive action confirmations: use full clarity.
+
+## Testing changes
+
+Always run this before considering a change to `internal/` or `terraform/*.tf`
+done — `go build`/`go test` passing is not sufficient proof it works end to
+end:
+
+```shell
+./terraform/build-local.sh
+terraform -chdir=terraform plan
+```
+
+`build-local.sh` builds the provider from source, installs it into the local
+filesystem mirror, and re-inits `terraform/` against that build. `plan`
+requires `URLLO_API_KEY` / `URLLO_API_SECRET` in the environment, since it
+reads real hosts and rules from the live Urllo API — see `terraform/README.md`
+for full setup. Review the plan output for unexpected diffs (e.g. attributes
+that shouldn't have changed showing as changed) before reporting the task
+complete.

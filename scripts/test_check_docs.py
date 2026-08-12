@@ -13,10 +13,11 @@ depend on (or corrupt) this repo's actual README/docs state.
 
 from __future__ import annotations
 
+import io
 import sys
 import tempfile
 import unittest
-from contextlib import contextmanager
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from pathlib import Path
 from typing import Iterator
 from unittest import mock
@@ -280,7 +281,15 @@ class RunAllChecksAndMainTest(unittest.TestCase):
             repo.add_tf_file("provider.tf")
             repo.set_tf_readme("nothing mentioned\n")
             repo.set_readme("nothing here\n")
-            with mock.patch.object(check_docs, "repo_root", return_value=repo.root):
+            # main() prints its failure report to stdout/stderr; capture it so
+            # this expected-failure fixture doesn't leak "MISSING: ..." /
+            # "Documentation is out of sync" lines into the real test log,
+            # where they read as an actual check-docs failure.
+            with (
+                mock.patch.object(check_docs, "repo_root", return_value=repo.root),
+                redirect_stdout(io.StringIO()),
+                redirect_stderr(io.StringIO()),
+            ):
                 self.assertEqual(check_docs.main(), 1)
 
 

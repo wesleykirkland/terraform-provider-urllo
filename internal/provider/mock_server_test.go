@@ -260,10 +260,7 @@ func (m *mockUrllo) hostItem(w http.ResponseWriter, r *http.Request, id string) 
 		}
 		if upd.NotFoundAction != nil {
 			nfa := *upd.NotFoundAction
-			// Mirrors the real API: custom_404_body is write-only. The content
-			// is never echoed back, only whether one is currently set.
 			nfa.Custom404BodyPresent = nfa.Custom404Body != nil && *nfa.Custom404Body != ""
-			nfa.Custom404Body = nil
 			host.Attributes.NotFoundAction = &nfa
 		}
 		if upd.Security != nil {
