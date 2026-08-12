@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file, generated
 automatically from Conventional Commits by git-cliff.
 
+## [1.1.1] - 2026-08-12
+
+### Bug Fixes
+
+- Custom_404_body plan noise, sensitivity, and API 1.2.0 updates (#9) ([#9](https://github.com/wesleykirkland/terraform-provider-urllo/pull/9))
+
 ## [1.1.0] - 2026-07-29
 
 ### Features
