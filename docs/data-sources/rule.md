@@ -29,8 +29,15 @@ output "rule_target" {
 
 - `id` (String) Rule identifier.
 
+### Optional
+
+- `analytics_end_date` (String) End date (`YYYY-MM-DD`) for analytics data, when `include_analytics` is `true`. Defaults to yesterday. Ignored otherwise.
+- `analytics_start_date` (String) Start date (`YYYY-MM-DD`) for analytics data, when `include_analytics` is `true`. Defaults to one month ago. Ignored otherwise.
+- `include_analytics` (Boolean) Whether to fetch request-volume analytics for the rule (the API `include_analytics` parameter). Defaults to `false`. Note that `requests_processed` changes over time, so setting this to `true` will show plan drift on every run for any rule receiving traffic.
+
 ### Read-Only
 
+- `analytics` (Attributes) Request-volume analytics for the rule. Null unless `include_analytics` is `true`. (see [below for nested schema](#nestedatt--analytics))
 - `certificate_status` (String) Certificate status of the rule's source host.
 - `dns_status` (String) DNS configuration status of the rule's source host.
 - `forward_params` (Boolean) Whether query parameters are forwarded.
@@ -40,3 +47,12 @@ output "rule_target" {
 - `source_urls` (Set of String) URLs the rule redirects from.
 - `tags` (Set of String) Tags associated with the rule.
 - `target_url` (String) URL the rule redirects to.
+
+<a id="nestedatt--analytics"></a>
+### Nested Schema for `analytics`
+
+Read-Only:
+
+- `analytics_end_date` (String) Effective end date used for the analytics data.
+- `analytics_start_date` (String) Effective start date used for the analytics data (may differ from the requested date if clamped by your plan).
+- `requests_processed` (Number) Number of requests processed for the rule during the date range.

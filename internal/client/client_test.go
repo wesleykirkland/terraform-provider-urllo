@@ -38,7 +38,7 @@ func TestBasicAuthHeader(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestClient(srv)
-	if _, err := c.GetRule(context.Background(), "r1"); err != nil {
+	if _, err := c.GetRule(context.Background(), "r1", ListRulesOptions{}); err != nil {
 		t.Fatalf("GetRule: %v", err)
 	}
 	if !ok || gotUser != testKey || gotPass != testSecret {
@@ -61,7 +61,7 @@ func TestGetRuleDecodesEnvelope(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	rule, err := newTestClient(srv).GetRule(context.Background(), "abc")
+	rule, err := newTestClient(srv).GetRule(context.Background(), "abc", ListRulesOptions{})
 	if err != nil {
 		t.Fatalf("GetRule: %v", err)
 	}
@@ -80,7 +80,7 @@ func TestGetRuleReturnsNilWhenMissing(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	rule, err := newTestClient(srv).GetRule(context.Background(), "abc")
+	rule, err := newTestClient(srv).GetRule(context.Background(), "abc", ListRulesOptions{})
 	if err != nil {
 		t.Fatalf("GetRule: %v", err)
 	}
@@ -140,6 +140,69 @@ func TestListRulesSendsFilters(t *testing.T) {
 	}
 }
 
+func TestListRulesOmitsAnalyticsParamsByDefault(t *testing.T) {
+	var gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
+		fmt.Fprint(w, `{"data":[],"meta":{"has_more":false},"links":{"next":null}}`)
+	}))
+	defer srv.Close()
+
+	_, err := newTestClient(srv).ListRules(context.Background(), ListRulesOptions{
+		AnalyticsStartDate: "2026-08-05", AnalyticsEndDate: "2026-08-11",
+	})
+	if err != nil {
+		t.Fatalf("ListRules: %v", err)
+	}
+	for _, unwanted := range []string{"include_analytics", "analytics_start_date", "analytics_end_date"} {
+		if strings.Contains(gotQuery, unwanted) {
+			t.Errorf("query %q should not contain %q when IncludeAnalytics is false", gotQuery, unwanted)
+		}
+	}
+}
+
+func TestListRulesSendsAnalyticsParams(t *testing.T) {
+	var gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
+		fmt.Fprint(w, `{"data":[],"meta":{"has_more":false},"links":{"next":null}}`)
+	}))
+	defer srv.Close()
+
+	_, err := newTestClient(srv).ListRules(context.Background(), ListRulesOptions{
+		IncludeAnalytics: true, AnalyticsStartDate: "2026-08-05", AnalyticsEndDate: "2026-08-11",
+	})
+	if err != nil {
+		t.Fatalf("ListRules: %v", err)
+	}
+	for _, want := range []string{"include_analytics=true", "analytics_start_date=2026-08-05", "analytics_end_date=2026-08-11"} {
+		if !strings.Contains(gotQuery, want) {
+			t.Errorf("query %q missing %q", gotQuery, want)
+		}
+	}
+}
+
+func TestListRulesDecodesAnalytics(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"data":[{"id":"r1","type":"rule","attributes":{
+			"analytics":{"analytics_start_date":"2026-08-05","analytics_end_date":"2026-08-11","requests_processed":14832}
+		}}],"meta":{"has_more":false},"links":{"next":null}}`)
+	}))
+	defer srv.Close()
+
+	rules, err := newTestClient(srv).ListRules(context.Background(), ListRulesOptions{IncludeAnalytics: true})
+	if err != nil {
+		t.Fatalf("ListRules: %v", err)
+	}
+	if len(rules) != 1 || rules[0].Attributes.Analytics == nil {
+		t.Fatalf("expected analytics to be decoded, got: %+v", rules)
+	}
+	got := rules[0].Attributes.Analytics
+	if got.AnalyticsStartDate != "2026-08-05" || got.AnalyticsEndDate != "2026-08-11" || got.RequestsProcessed != 14832 {
+		t.Fatalf("unexpected analytics: %+v", got)
+	}
+}
+
 func TestUnauthorizedErrorMapping(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -147,7 +210,7 @@ func TestUnauthorizedErrorMapping(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	_, err := newTestClient(srv).GetRule(context.Background(), "x")
+	_, err := newTestClient(srv).GetRule(context.Background(), "x", ListRulesOptions{})
 	apiErr, ok := err.(*APIError)
 	if !ok {
 		t.Fatalf("expected *APIError, got %T: %v", err, err)
@@ -224,7 +287,7 @@ func TestIdempotencyKeyOnWrites(t *testing.T) {
 	if _, err := c.UpdateRule(ctx, "r1", RuleAttributes{TargetURL: "d.com"}); err != nil {
 		t.Fatalf("UpdateRule: %v", err)
 	}
-	if _, err := c.GetRule(ctx, "r1"); err != nil {
+	if _, err := c.GetRule(ctx, "r1", ListRulesOptions{}); err != nil {
 		t.Fatalf("GetRule: %v", err)
 	}
 	if postKey == "" || patchKey == "" {
@@ -251,7 +314,7 @@ func TestRetriesOnRateLimit(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	rule, err := newTestClient(srv).GetRule(context.Background(), "r1")
+	rule, err := newTestClient(srv).GetRule(context.Background(), "r1", ListRulesOptions{})
 	if err != nil {
 		t.Fatalf("GetRule after retry: %v", err)
 	}
