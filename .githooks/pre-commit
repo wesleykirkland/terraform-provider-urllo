@@ -5,9 +5,11 @@ the first time anyone runs any `make` target in this clone. No manual
 `pre-commit install` step required.
 
 Only fast, credential-free checks run here (the same ones CI's "build" and
-"unit" jobs require); acceptance tests and the coverage gate stay CI-only
-since they're slow and/or need Urllo credentials. Bypass with
-`git commit --no-verify` if you really need to.
+"unit" jobs require), plus the new-code coverage gate (`make cover-new`,
+credential-free via the mock-backed acceptance tests -- see AGENTS.md for
+the coverage policy it enforces). The repo-wide `make cover` floor and the
+real (non-mock) acceptance tests stay CI-only since they need Urllo
+credentials. Bypass with `git commit --no-verify` if you really need to.
 
 Plain Python (no bash) so this works the same for Windows contributors,
 who may not have a POSIX shell on PATH.
@@ -59,6 +61,9 @@ def main() -> int:
         print("Install: https://golangci-lint.run/welcome/install/", file=sys.stderr)
 
     if run_step(root, "unit tests", ["make", "test"]) != 0:
+        return 1
+
+    if run_step(root, "new-code coverage", ["make", "cover-new"]) != 0:
         return 1
 
     if run_step(root, "doc completeness", ["make", "check-docs"]) != 0:

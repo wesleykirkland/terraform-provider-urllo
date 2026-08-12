@@ -1,5 +1,9 @@
 # Test coverage
 
+> See [AGENTS.md](AGENTS.md) for the coverage *policy* (the two enforced
+> floors and when pre-commit/CI check each one). This file covers the
+> repo-wide floor's breakdown and its documented exceptions.
+
 This provider is tested to a high statement-coverage level and enforces a floor
 in CI (`make cover`, currently **97%**):
 
