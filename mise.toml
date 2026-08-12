@@ -1,9 +1,11 @@
 [tools]
 # Kept in sync by hand with: go.mod's `go` directive, the Terraform version
-# used by the "unit"/"generate" CI jobs (the acceptance-test matrix job
-# intentionally overrides this per-leg via hashicorp/setup-terraform instead,
-# since it needs several concrete Terraform CLI versions side by side), and
-# the ruff/coverage pins also used by scripts/run_python_tests.py's CI step.
+# used by every mise-based CI job (test.yml's "unit"/"generate", terraform.yml's
+# "test"/"terraform", release.yml's "goreleaser" -- test.yml's acceptance-test
+# matrix job is the one exception, intentionally overriding this per-leg via
+# hashicorp/setup-terraform instead, since it needs several concrete Terraform
+# CLI versions side by side), and the ruff/coverage pins also used by
+# scripts/run_python_tests.py's CI step.
 go = "1.25.8"
 golangci-lint = "2.12"
 terraform = "1.15"
