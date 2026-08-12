@@ -77,14 +77,15 @@ cover: hooks
 	echo "total coverage: $$total% (min $(COVER_MIN)%)"; \
 	awk "BEGIN { exit !($$total >= $(COVER_MIN)) }" || { echo "coverage below $(COVER_MIN)%"; exit 1; }
 
-# cover-new is the repo-wide floor's stricter sibling: it fails if any line
-# *added on this branch relative to main* isn't covered, catching gaps a
-# small new file can hide from the aggregate COVER_MIN check above (see
-# AGENTS.md). Approximates SonarCloud's "Coverage on New Code" gate locally.
+# cover-new is the repo-wide floor's sibling: it fails if any line *added on
+# this branch relative to main* isn't covered, catching gaps a small new file
+# can hide from the aggregate COVER_MIN check above (see AGENTS.md).
+# Approximates SonarCloud's "Coverage on New Code" gate locally. Shares the
+# same COVER_MIN variable as `cover` above -- override per-invocation (e.g.
+# `make cover-new COVER_MIN=100`) for a stricter local check.
 # See scripts/check_new_code_coverage.py.
-PYTHON_CODE_COVER_MIN ?= 100.0
-cover-python: hooks
+cover-new: hooks
 	TF_ACC=1 go test -timeout 30m -coverprofile=coverage.out ./...
-	PYTHON_CODE_COVER_MIN=$(PYTHON_CODE_COVER_MIN) $(PYTHON) scripts/check_new_code_coverage.py
+	COVER_MIN=$(COVER_MIN) $(PYTHON) scripts/check_new_code_coverage.py
 
 .PHONY: fmt lint vet test testacc cover cover-new build install generate check-docs check-api-spec lint-py test-py hooks

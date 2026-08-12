@@ -38,8 +38,29 @@ at runtime with a valid schema, and are intentionally kept:
   the pattern HashiCorp's own scaffolding uses, and removing it would drop a real
   safety net if the schema and model ever diverge.
 - `if host == nil` in the host resource's `Read`, a nil-guard for the
-  name-lookup path that `Read` (which always has an ID) never takes.
+  name-lookup path that `Read` (which always has an ID) never takes. Marked in
+  source with a `// coverage:ignore` comment (see below).
 
 These are deliberately **not** removed to reach a round number; correctness and
 robustness are preferred over a 100% figure. The CI floor (`COVER_MIN`) guards
 against regressions in the coverable code.
+
+## Marking a genuinely unreachable line
+
+[AGENTS.md](AGENTS.md)'s new-code floor (`make cover-new`,
+`scripts/check_new_code_coverage.py`) requires every line added on a branch to
+be covered -- but it recognizes one explicit exception: a line inside an
+uncovered statement block is exempted if that block contains a trailing
+comment naming the marker, for example:
+
+```go
+if host == nil {
+    // coverage:ignore: Read always supplies an ID, so this is unreachable.
+    resp.State.RemoveResource(ctx)
+    return
+}
+```
+
+Use this sparingly, only for the same class of defensive guard documented
+above -- not as a way to skip writing a test that's merely inconvenient. Add
+an entry to this file's list when you add one, the same as the existing two.

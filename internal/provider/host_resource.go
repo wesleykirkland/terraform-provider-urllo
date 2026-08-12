@@ -290,6 +290,9 @@ func (r *HostResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 	if host == nil {
+		// coverage:ignore: Read always supplies an ID (readHost's
+		// name-lookup path, which can return a nil host, is only reached
+		// from Create), so this is unreachable in practice; see COVERAGE.md.
 		resp.State.RemoveResource(ctx)
 		return
 	}

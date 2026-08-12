@@ -140,6 +140,69 @@ class FindUncoveredTest(unittest.TestCase):
         profile = c.parse_coverage_profile(PROFILE_TEXT)
         self.assertTrue(c.find_uncovered(added, profile))
 
+    def test_marked_block_is_exempted_via_sources(self) -> None:
+        added = {"internal/provider/rule_types.go": {56, 57, 58}}
+        profile = c.parse_coverage_profile(PROFILE_TEXT)
+        source_lines = ["" for _ in range(54)] + ["// coverage:ignore: reason"] + ["" for _ in range(10)]
+        sources = {"internal/provider/rule_types.go": source_lines}
+        self.assertEqual(c.find_uncovered(added, profile, sources), {})
+
+
+class BlockIsIgnoredTest(unittest.TestCase):
+    def test_true_when_marker_present_in_range(self) -> None:
+        lines = ["if x {", "    // coverage:ignore: reason", "    y()", "}"]
+        self.assertTrue(c.block_is_ignored(lines, 2, 3))
+
+    def test_false_when_marker_absent(self) -> None:
+        lines = ["if x {", "    y()", "}"]
+        self.assertFalse(c.block_is_ignored(lines, 1, 3))
+
+    def test_false_when_marker_outside_range(self) -> None:
+        lines = ["// coverage:ignore: unrelated", "if x {", "    y()", "}"]
+        self.assertFalse(c.block_is_ignored(lines, 2, 4))
+
+
+class BlocksForFileTest(unittest.TestCase):
+    def test_finds_blocks_by_suffix_match(self) -> None:
+        profile = c.parse_coverage_profile(PROFILE_TEXT)
+        blocks = c.blocks_for_file(profile, "internal/provider/rule_types.go")
+        self.assertIsNotNone(blocks)
+        self.assertEqual(len(blocks), 4)
+
+    def test_returns_none_when_file_not_in_profile(self) -> None:
+        profile = c.parse_coverage_profile(PROFILE_TEXT)
+        self.assertIsNone(c.blocks_for_file(profile, "tools/tools.go"))
+
+
+class LineIsUncoveredTest(unittest.TestCase):
+    BLOCKS = [(55, 61, 0), (64, 69, 1)]
+
+    def test_true_for_line_in_zero_hit_block_without_source(self) -> None:
+        self.assertTrue(c.line_is_uncovered(56, self.BLOCKS, None))
+
+    def test_false_for_line_in_covered_block(self) -> None:
+        self.assertFalse(c.line_is_uncovered(65, self.BLOCKS, None))
+
+    def test_false_for_line_outside_any_block(self) -> None:
+        self.assertFalse(c.line_is_uncovered(200, self.BLOCKS, None))
+
+    def test_false_when_block_carries_ignore_marker(self) -> None:
+        source = ["" for _ in range(60)] + ["// coverage:ignore: reason"] + ["" for _ in range(10)]
+        self.assertFalse(c.line_is_uncovered(56, self.BLOCKS, source))
+
+    def test_true_when_source_present_but_unmarked(self) -> None:
+        source = ["plain line" for _ in range(70)]
+        self.assertTrue(c.line_is_uncovered(56, self.BLOCKS, source))
+
+
+class LoadSourcesTest(unittest.TestCase):
+    def test_reads_existing_files_and_skips_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "a.go").write_text("line1\nline2\n", encoding="utf-8")
+            sources = c.load_sources(root, ["a.go", "missing.go"])
+        self.assertEqual(sources, {"a.go": ["line1", "line2"]})
+
 
 class RepoRootTest(unittest.TestCase):
     def test_invokes_git_rev_parse(self) -> None:
@@ -219,6 +282,25 @@ class MainTest(unittest.TestCase):
                 mock.patch.object(c, "diff_against", return_value=diff),
             ):
                 self.assertEqual(c.main(), 1)
+
+    def test_returns_zero_when_uncovered_block_is_marked_ignored_on_disk(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / c.COVERAGE_PROFILE).write_text(PROFILE_TEXT, encoding="utf-8")
+            provider_dir = root / "internal" / "provider"
+            provider_dir.mkdir(parents=True)
+            # DIFF_ONE_FILE's added lines (52-58) span two uncovered profile
+            # blocks, (52,54,0) and (55,61,0), so both need a marker line.
+            src_lines = ["" for _ in range(70)]
+            src_lines[52] = "// coverage:ignore: reason"  # line 53, in (52,54,0)
+            src_lines[55] = "// coverage:ignore: reason"  # line 56, in (55,61,0)
+            (provider_dir / "rule_types.go").write_text("\n".join(src_lines), encoding="utf-8")
+            with (
+                mock.patch.object(c, "repo_root", return_value=root),
+                mock.patch.object(c, "merge_base", return_value="base-sha"),
+                mock.patch.object(c, "diff_against", return_value=DIFF_ONE_FILE),
+            ):
+                self.assertEqual(c.main(), 0)
 
     def test_returns_zero_when_no_go_files_changed(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
