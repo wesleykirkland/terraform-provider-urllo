@@ -371,21 +371,5 @@ func (r *HostResource) applyUpdate(ctx context.Context, id string, data *HostRes
 
 // applyHostToModel copies server-returned values into the model.
 func (r *HostResource) applyHostToModel(host *client.Host, data *HostResourceModel, diags *diag.Diagnostics) {
-	a := host.Attributes
-	data.ID = types.StringValue(host.ID)
-	data.Name = types.StringValue(a.Name)
-	data.ACMEEnabled = types.BoolValue(a.ACMEEnabled)
-	data.Custom404Body = custom404BodyValue(a.NotFoundAction)
-	data.DNSStatus = types.StringValue(a.DNSStatus)
-	data.CertificateStatus = types.StringValue(a.CertificateStatus)
-	if r.includeDNSTestedAt {
-		data.DNSTestedAt = stringPtrValue(a.DNSTestedAt)
-	} else {
-		data.DNSTestedAt = types.StringNull()
-	}
-	data.MatchOptions = matchOptionsToObject(a.MatchOptions, diags)
-	data.NotFoundAction = notFoundActionToObject(a.NotFoundAction, diags)
-	data.Security = securityToObject(a.Security, diags)
-	data.RequiredDNSEntries = requiredDNSToObject(a.RequiredDNSEntries, diags)
-	data.DetectedDNSEntries = detectedDNSToList(a.DetectedDNSEntries, diags)
+	populateHostModel(host, data, r.includeDNSTestedAt, diags)
 }

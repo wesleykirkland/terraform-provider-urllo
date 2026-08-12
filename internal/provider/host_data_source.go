@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/wesleykirkland/terraform-provider-urllo/internal/client"
 )
@@ -28,21 +27,9 @@ type HostDataSource struct {
 	includeDNSTestedAt bool
 }
 
-// HostDataSourceModel maps urllo_host data-source data.
-type HostDataSourceModel struct {
-	ID                 types.String `tfsdk:"id"`
-	Name               types.String `tfsdk:"name"`
-	ACMEEnabled        types.Bool   `tfsdk:"acme_enabled"`
-	Custom404Body      types.String `tfsdk:"custom_404_body"`
-	MatchOptions       types.Object `tfsdk:"match_options"`
-	NotFoundAction     types.Object `tfsdk:"not_found_action"`
-	Security           types.Object `tfsdk:"security"`
-	DNSStatus          types.String `tfsdk:"dns_status"`
-	CertificateStatus  types.String `tfsdk:"certificate_status"`
-	DNSTestedAt        types.String `tfsdk:"dns_tested_at"`
-	RequiredDNSEntries types.Object `tfsdk:"required_dns_entries"`
-	DetectedDNSEntries types.List   `tfsdk:"detected_dns_entries"`
-}
+// HostDataSourceModel maps urllo_host data-source data. It is identical to
+// HostResourceModel, so the two share a single type rather than drifting.
+type HostDataSourceModel = HostResourceModel
 
 func (d *HostDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_host"
@@ -119,23 +106,7 @@ func (d *HostDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	a := host.Attributes
-	data.ID = types.StringValue(host.ID)
-	data.Name = types.StringValue(a.Name)
-	data.ACMEEnabled = types.BoolValue(a.ACMEEnabled)
-	data.Custom404Body = custom404BodyValue(a.NotFoundAction)
-	data.DNSStatus = types.StringValue(a.DNSStatus)
-	data.CertificateStatus = types.StringValue(a.CertificateStatus)
-	if d.includeDNSTestedAt {
-		data.DNSTestedAt = stringPtrValue(a.DNSTestedAt)
-	} else {
-		data.DNSTestedAt = types.StringNull()
-	}
-	data.MatchOptions = matchOptionsToObject(a.MatchOptions, &resp.Diagnostics)
-	data.NotFoundAction = notFoundActionToObject(a.NotFoundAction, &resp.Diagnostics)
-	data.Security = securityToObject(a.Security, &resp.Diagnostics)
-	data.RequiredDNSEntries = requiredDNSToObject(a.RequiredDNSEntries, &resp.Diagnostics)
-	data.DetectedDNSEntries = detectedDNSToList(a.DetectedDNSEntries, &resp.Diagnostics)
+	populateHostModel(host, &data, d.includeDNSTestedAt, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
