@@ -175,6 +175,17 @@ func TestUnprocessableEntityErrorMapping(t *testing.T) {
 	}
 }
 
+func TestDeleteRuleSucceeds(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	if err := newTestClient(srv).DeleteRule(context.Background(), "r1"); err != nil {
+		t.Fatalf("DeleteRule: %v", err)
+	}
+}
+
 func TestNotFoundHelper(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
