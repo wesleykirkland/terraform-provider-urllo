@@ -129,7 +129,11 @@ jobs:
           soft_fail: true
         continue-on-error: true
 
-      # Plan on PR; apply on merge to main, the run-apply label, or dispatch.
+      # Apply is temporarily disabled -- always plan, regardless of trigger.
+      # To re-enable, restore the commented-out command/arg-lock expressions
+      # below (which resolve to 'apply' on push to main, the run-apply label,
+      # or a workflow_dispatch command=apply input) in place of the
+      # hardcoded values.
       - name: Provision TF
         uses: op5dev/tf-via-pr@39ed2635c056ca408ed24cc5c2baf0ef4381a7a5 # v13
         env:
@@ -139,15 +143,17 @@ jobs:
           URLLO_API_SECRET: ${{ secrets.URLLO_API_SECRET }}
         with:
           working-directory: ${{ env.TF_WORKING_DIR }}
-          command: >-
-            ${{ inputs.command ||
-                (github.event_name == 'push' && 'apply') ||
-                (contains(github.event.pull_request.labels.*.name, 'run-apply') && 'apply') ||
-                'plan' }}
-          arg-lock: >-
-            ${{ inputs.command == 'apply' ||
-                github.event_name == 'push' ||
-                contains(github.event.pull_request.labels.*.name, 'run-apply') }}
+          command: plan
+          # command: >-
+          #   ${{ inputs.command ||
+          #       (github.event_name == 'push' && 'apply') ||
+          #       (contains(github.event.pull_request.labels.*.name, 'run-apply') && 'apply') ||
+          #       'plan' }}
+          arg-lock: false
+          # arg-lock: >-
+          #   ${{ inputs.command == 'apply' ||
+          #       github.event_name == 'push' ||
+          #       contains(github.event.pull_request.labels.*.name, 'run-apply') }}
           plan-encrypt: ${{ secrets.TF_PLAN_PASSPHRASE }}
           validate: true
           format: true
