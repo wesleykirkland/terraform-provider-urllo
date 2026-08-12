@@ -57,7 +57,9 @@ def warn(message: str) -> None:
     print(f"::warning::{message}")
 
 
-def main() -> int:
+def main() -> None:
+    # Always exits 0 (see module docstring): drift is reported via a GitHub
+    # Actions warning annotation, not a failing check.
     root = repo_root()
     built = built_version(root)
 
@@ -65,18 +67,18 @@ def main() -> int:
         live = fetch_live_version()
     except (urllib.error.URLError, TimeoutError, ValueError, KeyError) as exc:
         warn(f"Could not check the live Urllo OpenAPI spec ({SPEC_URL}) for drift: {exc}")
-        return 0
+        return
 
     if live == built:
         print(f"Urllo OpenAPI spec version unchanged ({built}).")
-        return 0
+        return
 
     warn(
         f"Urllo OpenAPI spec has moved from {built} (recorded in {VERSION_FILE}) to {live}. "
         f"Review {SPEC_URL} for changes relevant to this provider, then update {VERSION_FILE}."
     )
-    return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())  # pragma: no cover
+    main()  # pragma: no cover
+    sys.exit(0)

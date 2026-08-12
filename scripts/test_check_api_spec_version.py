@@ -72,30 +72,30 @@ class WarnTest(unittest.TestCase):
 
 
 class MainTest(unittest.TestCase):
-    def test_returns_zero_and_no_warning_when_versions_match(self) -> None:
+    def test_returns_none_and_no_warning_when_versions_match(self) -> None:
         with temp_repo("1.2.0") as root:
             with (
                 mock.patch.object(check_api_spec_version, "repo_root", return_value=root),
                 mock.patch.object(check_api_spec_version, "fetch_live_version", return_value="1.2.0"),
                 mock.patch.object(check_api_spec_version, "warn") as warn,
             ):
-                self.assertEqual(check_api_spec_version.main(), 0)
+                self.assertIsNone(check_api_spec_version.main())
             warn.assert_not_called()
 
-    def test_returns_zero_and_warns_when_live_version_is_newer(self) -> None:
+    def test_returns_none_and_warns_when_live_version_is_newer(self) -> None:
         with temp_repo("1.2.0") as root:
             with (
                 mock.patch.object(check_api_spec_version, "repo_root", return_value=root),
                 mock.patch.object(check_api_spec_version, "fetch_live_version", return_value="1.3.0"),
                 mock.patch.object(check_api_spec_version, "warn") as warn,
             ):
-                self.assertEqual(check_api_spec_version.main(), 0)
+                self.assertIsNone(check_api_spec_version.main())
             self.assertEqual(warn.call_count, 1)
             (message,), _ = warn.call_args
             self.assertIn("1.2.0", message)
             self.assertIn("1.3.0", message)
 
-    def test_returns_zero_and_warns_when_live_spec_is_unreachable(self) -> None:
+    def test_returns_none_and_warns_when_live_spec_is_unreachable(self) -> None:
         with temp_repo("1.2.0") as root:
             with (
                 mock.patch.object(check_api_spec_version, "repo_root", return_value=root),
@@ -106,11 +106,11 @@ class MainTest(unittest.TestCase):
                 ),
                 mock.patch.object(check_api_spec_version, "warn") as warn,
             ):
-                self.assertEqual(check_api_spec_version.main(), 0)
+                self.assertIsNone(check_api_spec_version.main())
             self.assertEqual(warn.call_count, 1)
             self.assertIn("Could not check", warn.call_args[0][0])
 
-    def test_returns_zero_and_warns_on_malformed_live_spec(self) -> None:
+    def test_returns_none_and_warns_on_malformed_live_spec(self) -> None:
         with temp_repo("1.2.0") as root:
             with (
                 mock.patch.object(check_api_spec_version, "repo_root", return_value=root),
@@ -121,7 +121,7 @@ class MainTest(unittest.TestCase):
                 ),
                 mock.patch.object(check_api_spec_version, "warn") as warn,
             ):
-                self.assertEqual(check_api_spec_version.main(), 0)
+                self.assertIsNone(check_api_spec_version.main())
             self.assertEqual(warn.call_count, 1)
 
 
