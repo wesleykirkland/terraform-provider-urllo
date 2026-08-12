@@ -300,9 +300,7 @@ func (r *HostResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 func (r *HostResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan, state HostResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
+	if !loadPlanAndState(ctx, req, resp, &plan, &state) {
 		return
 	}
 	plan.ID = state.ID

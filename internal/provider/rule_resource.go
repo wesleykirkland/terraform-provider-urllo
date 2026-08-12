@@ -238,9 +238,7 @@ func (r *RuleResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 func (r *RuleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan, state RuleResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
+	if !loadPlanAndState(ctx, req, resp, &plan, &state) {
 		return
 	}
 	plan.ID = state.ID
