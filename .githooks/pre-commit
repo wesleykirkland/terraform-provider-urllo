@@ -38,6 +38,24 @@ def run_step(root: Path, step: str, cmd: list[str]) -> int:
     return subprocess.run(cmd, cwd=root).returncode
 
 
+def run_optional_step(root: Path, step: str, tool: str, cmd: list[str], install_hint: str) -> int:
+    """Runs `cmd` (e.g. ["make", "lint"], which shells out to `tool`) if
+    `tool` is resolvable, and returns 1 on failure. `mise` (this project's
+    pinned toolchain manager, see mise.toml) is tried first even when `tool`
+    is also on plain PATH, so the version that actually runs here matches
+    what CI's jdx/mise-action pins -- not whatever happens to be globally
+    installed. Soft-skips (returns 0) only when neither resolves `tool`,
+    matching this hook's philosophy of never blocking a commit on a locally
+    missing optional tool."""
+    if shutil.which("mise"):
+        return run_step(root, step, ["mise", "exec", "--", *cmd])
+    if shutil.which(tool):
+        return run_step(root, step, cmd)
+    print(f"{tool} not found on PATH or via mise -- skipping locally (CI still runs it).", file=sys.stderr)
+    print(f"Install: {install_hint}", file=sys.stderr)
+    return 0
+
+
 def main() -> int:
     root = repo_root()
 
@@ -53,12 +71,10 @@ def main() -> int:
         print(result.stdout, file=sys.stderr)
         return 1
 
-    if shutil.which("golangci-lint"):
-        if run_step(root, "lint", ["make", "lint"]) != 0:
-            return 1
-    else:
-        print("golangci-lint not found on PATH -- skipping locally (CI still runs it).", file=sys.stderr)
-        print("Install: https://golangci-lint.run/welcome/install/", file=sys.stderr)
+    if run_optional_step(
+        root, "lint", "golangci-lint", ["make", "lint"], "https://golangci-lint.run/welcome/install/ or `mise install`"
+    ) != 0:
+        return 1
 
     if run_step(root, "unit tests", ["make", "test"]) != 0:
         return 1
@@ -72,12 +88,8 @@ def main() -> int:
     if run_step(root, "python tests", ["make", "test-py"]) != 0:
         return 1
 
-    if shutil.which("ruff"):
-        if run_step(root, "python lint", ["make", "lint-py"]) != 0:
-            return 1
-    else:
-        print("ruff not found -- skipping python lint locally (CI still runs it).", file=sys.stderr)
-        print("Install: pip install ruff", file=sys.stderr)
+    if run_optional_step(root, "python lint", "ruff", ["make", "lint-py"], "pip install ruff, or `mise install`") != 0:
+        return 1
 
     return 0
 

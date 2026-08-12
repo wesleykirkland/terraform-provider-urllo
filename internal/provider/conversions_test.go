@@ -166,13 +166,28 @@ func TestAnalyticsToObject(t *testing.T) {
 	}, &d)
 	noErr(t, d)
 	attrs := obj.Attributes()
-	if got := attrs["analytics_start_date"].(types.String).ValueString(); got != "2026-08-05" {
+
+	startDate, ok := attrs["analytics_start_date"].(types.String)
+	if !ok {
+		t.Fatalf("analytics_start_date is a %T, not types.String", attrs["analytics_start_date"])
+	}
+	if got := startDate.ValueString(); got != "2026-08-05" {
 		t.Errorf("analytics_start_date = %q", got)
 	}
-	if got := attrs["analytics_end_date"].(types.String).ValueString(); got != "2026-08-11" {
+
+	endDate, ok := attrs["analytics_end_date"].(types.String)
+	if !ok {
+		t.Fatalf("analytics_end_date is a %T, not types.String", attrs["analytics_end_date"])
+	}
+	if got := endDate.ValueString(); got != "2026-08-11" {
 		t.Errorf("analytics_end_date = %q", got)
 	}
-	if got := attrs["requests_processed"].(types.Int64).ValueInt64(); got != 14832 {
+
+	requests, ok := attrs["requests_processed"].(types.Int64)
+	if !ok {
+		t.Fatalf("requests_processed is a %T, not types.Int64", attrs["requests_processed"])
+	}
+	if got := requests.ValueInt64(); got != 14832 {
 		t.Errorf("requests_processed = %d", got)
 	}
 }
