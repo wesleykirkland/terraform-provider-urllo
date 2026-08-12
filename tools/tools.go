@@ -9,7 +9,9 @@ package tools
 // pins their versions; they're not used as libraries here. Both are invoked
 // via `go run` in the go:generate directives below.
 import (
+	// Generates copyright headers; invoked via the go:generate directive below.
 	_ "github.com/hashicorp/copywrite"
+	// Generates provider documentation; invoked via the go:generate directive below.
 	_ "github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs"
 )
 

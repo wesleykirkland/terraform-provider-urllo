@@ -152,6 +152,23 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any, ro 
 		ro = &requestOptions{}
 	}
 
+	req, err := c.buildRequest(ctx, method, path, body, ro)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("performing request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	return decodeResponse(resp, out)
+}
+
+// buildRequest assembles the outgoing request: URL (with query string), JSON
+// body, standard headers, and idempotency key.
+func (c *Client) buildRequest(ctx context.Context, method, path string, body any, ro *requestOptions) (*retryablehttp.Request, error) {
 	u := c.baseURL + path
 	if len(ro.query) > 0 {
 		u += "?" + ro.query.Encode()
@@ -161,14 +178,14 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any, ro 
 	if body != nil {
 		buf, err := json.Marshal(body)
 		if err != nil {
-			return fmt.Errorf("encoding request body: %w", err)
+			return nil, fmt.Errorf("encoding request body: %w", err)
 		}
 		bodyReader = bytes.NewReader(buf)
 	}
 
 	req, err := retryablehttp.NewRequestWithContext(ctx, method, u, bodyReader)
 	if err != nil {
-		return fmt.Errorf("building request: %w", err)
+		return nil, fmt.Errorf("building request: %w", err)
 	}
 
 	req.SetBasicAuth(c.apiKey, c.apiSecret)
@@ -184,12 +201,12 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any, ro 
 		req.Header.Set("Idempotency-Key", key)
 	}
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("performing request: %w", err)
-	}
-	defer resp.Body.Close()
+	return req, nil
+}
 
+// decodeResponse reads resp's body, translates a non-2xx status into an
+// *APIError, and decodes a 2xx body into out when provided.
+func decodeResponse(resp *http.Response, out any) error {
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("reading response body: %w", err)
@@ -199,10 +216,11 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any, ro 
 		return decodeAPIError(resp.StatusCode, respBody)
 	}
 
-	if out != nil && len(respBody) > 0 {
-		if err := json.Unmarshal(respBody, out); err != nil {
-			return fmt.Errorf("decoding response: %w", err)
-		}
+	if out == nil || len(respBody) == 0 {
+		return nil
+	}
+	if err := json.Unmarshal(respBody, out); err != nil {
+		return fmt.Errorf("decoding response: %w", err)
 	}
 	return nil
 }
