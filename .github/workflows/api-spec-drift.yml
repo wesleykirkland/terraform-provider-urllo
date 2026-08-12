@@ -1,0 +1,33 @@
+# Warns (does not fail this workflow or block the PR) when the live Urllo
+# OpenAPI spec has moved past the version this provider was built against.
+# Urllo doesn't publish an API changelog, so this is the only signal we get
+# that upstream may have changed something worth reviewing. Split into its
+# own workflow file (rather than a job in test.yml) since it checks an
+# external, independently-changing resource rather than this repo's own
+# correctness.
+name: API Spec Drift
+
+on:
+  pull_request:
+    paths-ignore:
+      - 'README.md'
+
+# Only needs permissions to read the repository contents.
+permissions:
+  contents: read
+
+jobs:
+  api-spec-drift:
+    name: API spec drift check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: jdx/mise-action@9e7f7633ff6f6d6048a9418a68d48f288f50eb14 # v4.2.3
+      - name: check-api-spec
+        # `continue-on-error` is a second layer on top of the script itself
+        # always exiting 0 (see scripts/check_api_spec_version.py), so a
+        # live-spec outage or a transient network failure on the runner
+        # can't turn this into a required-check failure either.
+        run: make check-api-spec
+        continue-on-error: true
