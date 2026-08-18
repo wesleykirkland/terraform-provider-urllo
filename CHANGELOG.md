@@ -3,6 +3,14 @@
 All notable changes to this project are documented in this file, generated
 automatically from Conventional Commits by git-cliff.
 
+## [1.2.0] - 2026-08-18
+
+### Features
+
+- Ci workflows (#11) ([#11](https://github.com/wesleykirkland/terraform-provider-urllo/pull/11))
+
+- Rule analytics data sources, mise CI, and TF apply guard (#10) ([#10](https://github.com/wesleykirkland/terraform-provider-urllo/pull/10))
+
 ## [1.1.1] - 2026-08-12
 
 ### Bug Fixes
