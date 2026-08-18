@@ -30,6 +30,9 @@ output "matching_rule_ids" {
 
 ### Optional
 
+- `analytics_end_date` (String) End date (`YYYY-MM-DD`) for analytics data, when `include_analytics` is `true`. Defaults to yesterday. Ignored otherwise.
+- `analytics_start_date` (String) Start date (`YYYY-MM-DD`) for analytics data, when `include_analytics` is `true`. Defaults to one month ago. Ignored otherwise.
+- `include_analytics` (Boolean) Whether to fetch request-volume analytics for each rule (the API `include_analytics` parameter). Defaults to `false`. Note that `requests_processed` changes over time, so setting this to `true` will show plan drift on every run for any rule receiving traffic.
 - `source_query` (String) Filter by source URL (the API `sq` parameter). See the [List Rules API docs](https://dashboard.urllo.com/docs/api#tag/Rules/operation/listRules).
 - `tag_match_strategy` (String) How tags are matched: `any` (default) or `all` (the API `tag_match_strategy` parameter). See the [List Rules API docs](https://dashboard.urllo.com/docs/api#tag/Rules/operation/listRules).
 - `tags` (Set of String) Filter by tags (the API `tags[]` parameter). See the [List Rules API docs](https://dashboard.urllo.com/docs/api#tag/Rules/operation/listRules).
@@ -44,6 +47,7 @@ output "matching_rule_ids" {
 
 Read-Only:
 
+- `analytics` (Attributes) Request-volume analytics for the rule. Null unless `include_analytics` is `true`. (see [below for nested schema](#nestedatt--rules--analytics))
 - `certificate_status` (String) Certificate status of the rule's source host.
 - `dns_status` (String) DNS configuration status of the rule's source host.
 - `forward_params` (Boolean) Whether query parameters are forwarded.
@@ -54,3 +58,12 @@ Read-Only:
 - `source_urls` (Set of String) Source URLs.
 - `tags` (Set of String) Tags.
 - `target_url` (String) Target URL.
+
+<a id="nestedatt--rules--analytics"></a>
+### Nested Schema for `rules.analytics`
+
+Read-Only:
+
+- `analytics_end_date` (String) Effective end date used for the analytics data.
+- `analytics_start_date` (String) Effective start date used for the analytics data (may differ from the requested date if clamped by your plan).
+- `requests_processed` (Number) Number of requests processed for the rule during the date range.

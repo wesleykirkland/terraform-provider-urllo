@@ -5,12 +5,29 @@ package provider
 
 import (
 	"context"
+	"regexp"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/wesleykirkland/terraform-provider-urllo/internal/client"
+)
+
+// analyticsObjectAttrTypes is the shape of a rule's analytics object, present
+// only when the request opted into IncludeAnalytics.
+var analyticsObjectAttrTypes = map[string]attr.Type{
+	"analytics_start_date": types.StringType,
+	"analytics_end_date":   types.StringType,
+	"requests_processed":   types.Int64Type,
+}
+
+// analyticsDateValidator catches obviously malformed analytics_start_date /
+// analytics_end_date values before they reach the API.
+var analyticsDateValidator = stringvalidator.RegexMatches(
+	regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`),
+	"must be a date in YYYY-MM-DD format",
 )
 
 // ruleObjectAttrTypes is the shape of a rule object in the urllo_rules list.
@@ -25,6 +42,23 @@ var ruleObjectAttrTypes = map[string]attr.Type{
 	"name":               types.StringType,
 	"dns_status":         types.StringType,
 	"certificate_status": types.StringType,
+	"analytics":          types.ObjectType{AttrTypes: analyticsObjectAttrTypes},
+}
+
+// analyticsToObject converts a rule's analytics attributes to a Terraform
+// object, or a null object of the right shape when analytics wasn't
+// requested/returned.
+func analyticsToObject(a *client.AnalyticsAttributes, diags *diag.Diagnostics) types.Object {
+	if a == nil {
+		return types.ObjectNull(analyticsObjectAttrTypes)
+	}
+	obj, d := types.ObjectValue(analyticsObjectAttrTypes, map[string]attr.Value{
+		"analytics_start_date": types.StringValue(a.AnalyticsStartDate),
+		"analytics_end_date":   types.StringValue(a.AnalyticsEndDate),
+		"requests_processed":   types.Int64Value(a.RequestsProcessed),
+	})
+	diags.Append(d...)
+	return obj
 }
 
 func ruleToObject(ctx context.Context, rule client.Rule, diags *diag.Diagnostics) types.Object {
@@ -49,6 +83,7 @@ func ruleToObject(ctx context.Context, rule client.Rule, diags *diag.Diagnostics
 		"name":               types.StringValue(rule.Attributes.Name),
 		"dns_status":         types.StringValue(rule.Attributes.DNSStatus),
 		"certificate_status": types.StringValue(rule.Attributes.CertificateStatus),
+		"analytics":          analyticsToObject(rule.Attributes.Analytics, diags),
 	})
 	diags.Append(d...)
 	return obj

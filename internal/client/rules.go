@@ -32,6 +32,22 @@ type RuleAttributes struct {
 	Name              string `json:"name,omitempty"`
 	DNSStatus         string `json:"dns_status,omitempty"`
 	CertificateStatus string `json:"certificate_status,omitempty"`
+
+	// Analytics is only present when the request set include_analytics=true.
+	Analytics *AnalyticsAttributes `json:"analytics,omitempty"`
+}
+
+// AnalyticsAttributes holds request-volume analytics for a rule over the
+// requested date range. Only populated when a list/get call sets
+// ListRulesOptions.IncludeAnalytics.
+type AnalyticsAttributes struct {
+	// AnalyticsStartDate and AnalyticsEndDate are the effective dates used,
+	// which may differ from the requested range (the API clamps the start
+	// date to your plan's earliest allowed date, and the end date to
+	// yesterday).
+	AnalyticsStartDate string `json:"analytics_start_date"`
+	AnalyticsEndDate   string `json:"analytics_end_date"`
+	RequestsProcessed  int64  `json:"requests_processed"`
 }
 
 // Response type values for a rule.
@@ -47,6 +63,14 @@ type ListRulesOptions struct {
 	Tags             []string
 	TagMatchStrategy string // "any" (default) or "all"
 	Limit            int
+
+	// IncludeAnalytics requests per-rule request-volume analytics
+	// (include_analytics). AnalyticsStartDate/AnalyticsEndDate (YYYY-MM-DD)
+	// are only sent when IncludeAnalytics is true; the API defaults them to
+	// one month ago and yesterday respectively when omitted.
+	IncludeAnalytics   bool
+	AnalyticsStartDate string
+	AnalyticsEndDate   string
 }
 
 func (o ListRulesOptions) query() url.Values {
@@ -65,6 +89,15 @@ func (o ListRulesOptions) query() url.Values {
 	}
 	if o.Limit > 0 {
 		q.Set("limit", strconv.Itoa(o.Limit))
+	}
+	if o.IncludeAnalytics {
+		q.Set("include_analytics", "true")
+		if o.AnalyticsStartDate != "" {
+			q.Set("analytics_start_date", o.AnalyticsStartDate)
+		}
+		if o.AnalyticsEndDate != "" {
+			q.Set("analytics_end_date", o.AnalyticsEndDate)
+		}
 	}
 	return q
 }
@@ -89,7 +122,10 @@ func (c *Client) ListRules(ctx context.Context, opts ListRulesOptions) ([]Rule, 
 }
 
 // GetRule fetches a single rule by ID, or returns (nil, nil) if no rule with
-// that ID exists.
+// that ID exists. opts carries only the analytics fields (IncludeAnalytics,
+// AnalyticsStartDate, AnalyticsEndDate); callers should leave the other
+// ListRulesOptions fields zero-valued since the ID match happens client-side
+// below, not via a server-side filter.
 //
 // This deliberately does not call GET /rules/{id}: on the live API that path
 // shape is served by CloudFront, which returns a stale cached 404 for every
@@ -97,8 +133,8 @@ func (c *Client) ListRules(ctx context.Context, opts ListRulesOptions) ([]Rule, 
 // Using that endpoint would make Read() think every rule had been deleted
 // out-of-band and recreate it on every apply. Listing and filtering
 // client-side avoids the broken route entirely.
-func (c *Client) GetRule(ctx context.Context, id string) (*Rule, error) {
-	rules, err := c.ListRules(ctx, ListRulesOptions{})
+func (c *Client) GetRule(ctx context.Context, id string, opts ListRulesOptions) (*Rule, error) {
+	rules, err := c.ListRules(ctx, opts)
 	if err != nil {
 		return nil, err
 	}

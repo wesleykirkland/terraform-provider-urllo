@@ -5,9 +5,11 @@ the first time anyone runs any `make` target in this clone. No manual
 `pre-commit install` step required.
 
 Only fast, credential-free checks run here (the same ones CI's "build" and
-"unit" jobs require); acceptance tests and the coverage gate stay CI-only
-since they're slow and/or need Urllo credentials. Bypass with
-`git commit --no-verify` if you really need to.
+"unit" jobs require), plus the new-code coverage gate (`make cover-new`,
+credential-free via the mock-backed acceptance tests -- see AGENTS.md for
+the coverage policy it enforces). The repo-wide `make cover` floor and the
+real (non-mock) acceptance tests stay CI-only since they need Urllo
+credentials. Bypass with `git commit --no-verify` if you really need to.
 
 Plain Python (no bash) so this works the same for Windows contributors,
 who may not have a POSIX shell on PATH.
@@ -36,6 +38,24 @@ def run_step(root: Path, step: str, cmd: list[str]) -> int:
     return subprocess.run(cmd, cwd=root).returncode
 
 
+def run_optional_step(root: Path, step: str, tool: str, cmd: list[str], install_hint: str) -> int:
+    """Runs `cmd` (e.g. ["make", "lint"], which shells out to `tool`) if
+    `tool` is resolvable, and returns 1 on failure. `mise` (this project's
+    pinned toolchain manager, see mise.toml) is tried first even when `tool`
+    is also on plain PATH, so the version that actually runs here matches
+    what CI's jdx/mise-action pins -- not whatever happens to be globally
+    installed. Soft-skips (returns 0) only when neither resolves `tool`,
+    matching this hook's philosophy of never blocking a commit on a locally
+    missing optional tool."""
+    if shutil.which("mise"):
+        return run_step(root, step, ["mise", "exec", "--", *cmd])
+    if shutil.which(tool):
+        return run_step(root, step, cmd)
+    print(f"{tool} not found on PATH or via mise -- skipping locally (CI still runs it).", file=sys.stderr)
+    print(f"Install: {install_hint}", file=sys.stderr)
+    return 0
+
+
 def main() -> int:
     root = repo_root()
 
@@ -51,14 +71,15 @@ def main() -> int:
         print(result.stdout, file=sys.stderr)
         return 1
 
-    if shutil.which("golangci-lint"):
-        if run_step(root, "lint", ["make", "lint"]) != 0:
-            return 1
-    else:
-        print("golangci-lint not found on PATH -- skipping locally (CI still runs it).", file=sys.stderr)
-        print("Install: https://golangci-lint.run/welcome/install/", file=sys.stderr)
+    if run_optional_step(
+        root, "lint", "golangci-lint", ["make", "lint"], "https://golangci-lint.run/welcome/install/ or `mise install`"
+    ) != 0:
+        return 1
 
     if run_step(root, "unit tests", ["make", "test"]) != 0:
+        return 1
+
+    if run_step(root, "new-code coverage", ["make", "cover-new"]) != 0:
         return 1
 
     if run_step(root, "doc completeness", ["make", "check-docs"]) != 0:
@@ -67,12 +88,8 @@ def main() -> int:
     if run_step(root, "python tests", ["make", "test-py"]) != 0:
         return 1
 
-    if shutil.which("ruff"):
-        if run_step(root, "python lint", ["make", "lint-py"]) != 0:
-            return 1
-    else:
-        print("ruff not found -- skipping python lint locally (CI still runs it).", file=sys.stderr)
-        print("Install: pip install ruff", file=sys.stderr)
+    if run_optional_step(root, "python lint", "ruff", ["make", "lint-py"], "pip install ruff, or `mise install`") != 0:
+        return 1
 
     return 0
 

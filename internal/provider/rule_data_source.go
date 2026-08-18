@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/wesleykirkland/terraform-provider-urllo/internal/client"
@@ -28,16 +29,20 @@ type RuleDataSource struct {
 
 // RuleDataSourceModel maps urllo_rule data-source data.
 type RuleDataSourceModel struct {
-	ID                types.String `tfsdk:"id"`
-	SourceURLs        types.Set    `tfsdk:"source_urls"`
-	TargetURL         types.String `tfsdk:"target_url"`
-	ResponseType      types.String `tfsdk:"response_type"`
-	ForwardParams     types.Bool   `tfsdk:"forward_params"`
-	ForwardPath       types.Bool   `tfsdk:"forward_path"`
-	Tags              types.Set    `tfsdk:"tags"`
-	Name              types.String `tfsdk:"name"`
-	DNSStatus         types.String `tfsdk:"dns_status"`
-	CertificateStatus types.String `tfsdk:"certificate_status"`
+	ID                 types.String `tfsdk:"id"`
+	SourceURLs         types.Set    `tfsdk:"source_urls"`
+	TargetURL          types.String `tfsdk:"target_url"`
+	ResponseType       types.String `tfsdk:"response_type"`
+	ForwardParams      types.Bool   `tfsdk:"forward_params"`
+	ForwardPath        types.Bool   `tfsdk:"forward_path"`
+	Tags               types.Set    `tfsdk:"tags"`
+	Name               types.String `tfsdk:"name"`
+	DNSStatus          types.String `tfsdk:"dns_status"`
+	CertificateStatus  types.String `tfsdk:"certificate_status"`
+	IncludeAnalytics   types.Bool   `tfsdk:"include_analytics"`
+	AnalyticsStartDate types.String `tfsdk:"analytics_start_date"`
+	AnalyticsEndDate   types.String `tfsdk:"analytics_end_date"`
+	Analytics          types.Object `tfsdk:"analytics"`
 }
 
 func (d *RuleDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -90,6 +95,45 @@ func (d *RuleDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 				MarkdownDescription: "Certificate status of the rule's source host.",
 				Computed:            true,
 			},
+			"include_analytics": schema.BoolAttribute{
+				MarkdownDescription: "Whether to fetch request-volume analytics for the rule (the API " +
+					"`include_analytics` parameter). Defaults to `false`. Note that `requests_processed` " +
+					"changes over time, so setting this to `true` will show plan drift on every run for any " +
+					"rule receiving traffic.",
+				Optional: true,
+			},
+			"analytics_start_date": schema.StringAttribute{
+				MarkdownDescription: "Start date (`YYYY-MM-DD`) for analytics data, when `include_analytics` " +
+					"is `true`. Defaults to one month ago. Ignored otherwise.",
+				Optional:   true,
+				Validators: []validator.String{analyticsDateValidator},
+			},
+			"analytics_end_date": schema.StringAttribute{
+				MarkdownDescription: "End date (`YYYY-MM-DD`) for analytics data, when `include_analytics` " +
+					"is `true`. Defaults to yesterday. Ignored otherwise.",
+				Optional:   true,
+				Validators: []validator.String{analyticsDateValidator},
+			},
+			"analytics": schema.SingleNestedAttribute{
+				MarkdownDescription: "Request-volume analytics for the rule. Null unless `include_analytics` " +
+					"is `true`.",
+				Computed: true,
+				Attributes: map[string]schema.Attribute{
+					"analytics_start_date": schema.StringAttribute{
+						MarkdownDescription: "Effective start date used for the analytics data (may differ " +
+							"from the requested date if clamped by your plan).",
+						Computed: true,
+					},
+					"analytics_end_date": schema.StringAttribute{
+						MarkdownDescription: "Effective end date used for the analytics data.",
+						Computed:            true,
+					},
+					"requests_processed": schema.Int64Attribute{
+						MarkdownDescription: "Number of requests processed for the rule during the date range.",
+						Computed:            true,
+					},
+				},
+			},
 		},
 	}
 }
@@ -107,7 +151,13 @@ func (d *RuleDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	rule, err := d.client.GetRule(ctx, data.ID.ValueString())
+	opts := client.ListRulesOptions{
+		IncludeAnalytics:   data.IncludeAnalytics.ValueBool(),
+		AnalyticsStartDate: data.AnalyticsStartDate.ValueString(),
+		AnalyticsEndDate:   data.AnalyticsEndDate.ValueString(),
+	}
+
+	rule, err := d.client.GetRule(ctx, data.ID.ValueString(), opts)
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading rule", err.Error())
 		return
@@ -127,6 +177,7 @@ func (d *RuleDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	data.Name = types.StringValue(rule.Attributes.Name)
 	data.DNSStatus = types.StringValue(rule.Attributes.DNSStatus)
 	data.CertificateStatus = types.StringValue(rule.Attributes.CertificateStatus)
+	data.Analytics = analyticsToObject(rule.Attributes.Analytics, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }

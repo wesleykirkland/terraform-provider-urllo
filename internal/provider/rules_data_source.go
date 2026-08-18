@@ -33,11 +33,14 @@ type RulesDataSource struct {
 
 // RulesDataSourceModel maps urllo_rules data-source data.
 type RulesDataSourceModel struct {
-	SourceQuery      types.String `tfsdk:"source_query"`
-	TargetQuery      types.String `tfsdk:"target_query"`
-	Tags             types.Set    `tfsdk:"tags"`
-	TagMatchStrategy types.String `tfsdk:"tag_match_strategy"`
-	Rules            types.List   `tfsdk:"rules"`
+	SourceQuery        types.String `tfsdk:"source_query"`
+	TargetQuery        types.String `tfsdk:"target_query"`
+	Tags               types.Set    `tfsdk:"tags"`
+	TagMatchStrategy   types.String `tfsdk:"tag_match_strategy"`
+	IncludeAnalytics   types.Bool   `tfsdk:"include_analytics"`
+	AnalyticsStartDate types.String `tfsdk:"analytics_start_date"`
+	AnalyticsEndDate   types.String `tfsdk:"analytics_end_date"`
+	Rules              types.List   `tfsdk:"rules"`
 }
 
 func (d *RulesDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -68,6 +71,25 @@ func (d *RulesDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 				Optional:   true,
 				Validators: []validator.String{stringvalidator.OneOf("any", "all")},
 			},
+			"include_analytics": schema.BoolAttribute{
+				MarkdownDescription: "Whether to fetch request-volume analytics for each rule (the API " +
+					"`include_analytics` parameter). Defaults to `false`. Note that `requests_processed` " +
+					"changes over time, so setting this to `true` will show plan drift on every run for any " +
+					"rule receiving traffic.",
+				Optional: true,
+			},
+			"analytics_start_date": schema.StringAttribute{
+				MarkdownDescription: "Start date (`YYYY-MM-DD`) for analytics data, when `include_analytics` " +
+					"is `true`. Defaults to one month ago. Ignored otherwise.",
+				Optional:   true,
+				Validators: []validator.String{analyticsDateValidator},
+			},
+			"analytics_end_date": schema.StringAttribute{
+				MarkdownDescription: "End date (`YYYY-MM-DD`) for analytics data, when `include_analytics` " +
+					"is `true`. Defaults to yesterday. Ignored otherwise.",
+				Optional:   true,
+				Validators: []validator.String{analyticsDateValidator},
+			},
 			"rules": schema.ListNestedAttribute{
 				MarkdownDescription: "The matching rules.",
 				Computed:            true,
@@ -83,6 +105,26 @@ func (d *RulesDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 						"name":               schema.StringAttribute{Computed: true, MarkdownDescription: "Display name Urllo assigns to the rule."},
 						"dns_status":         schema.StringAttribute{Computed: true, MarkdownDescription: "DNS configuration status of the rule's source host."},
 						"certificate_status": schema.StringAttribute{Computed: true, MarkdownDescription: "Certificate status of the rule's source host."},
+						"analytics": schema.SingleNestedAttribute{
+							MarkdownDescription: "Request-volume analytics for the rule. Null unless " +
+								"`include_analytics` is `true`.",
+							Computed: true,
+							Attributes: map[string]schema.Attribute{
+								"analytics_start_date": schema.StringAttribute{
+									MarkdownDescription: "Effective start date used for the analytics data " +
+										"(may differ from the requested date if clamped by your plan).",
+									Computed: true,
+								},
+								"analytics_end_date": schema.StringAttribute{
+									MarkdownDescription: "Effective end date used for the analytics data.",
+									Computed:            true,
+								},
+								"requests_processed": schema.Int64Attribute{
+									MarkdownDescription: "Number of requests processed for the rule during the date range.",
+									Computed:            true,
+								},
+							},
+						},
 					},
 				},
 			},
@@ -104,10 +146,13 @@ func (d *RulesDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	}
 
 	opts := client.ListRulesOptions{
-		SourceQuery:      data.SourceQuery.ValueString(),
-		TargetQuery:      data.TargetQuery.ValueString(),
-		Tags:             setToStrings(ctx, data.Tags, &resp.Diagnostics),
-		TagMatchStrategy: data.TagMatchStrategy.ValueString(),
+		SourceQuery:        data.SourceQuery.ValueString(),
+		TargetQuery:        data.TargetQuery.ValueString(),
+		Tags:               setToStrings(ctx, data.Tags, &resp.Diagnostics),
+		TagMatchStrategy:   data.TagMatchStrategy.ValueString(),
+		IncludeAnalytics:   data.IncludeAnalytics.ValueBool(),
+		AnalyticsStartDate: data.AnalyticsStartDate.ValueString(),
+		AnalyticsEndDate:   data.AnalyticsEndDate.ValueString(),
 	}
 	if resp.Diagnostics.HasError() {
 		return

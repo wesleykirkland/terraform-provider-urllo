@@ -145,6 +145,75 @@ func TestRuleToObjectAndList(t *testing.T) {
 	if obj.Attributes()["tags"].IsNull() != true {
 		t.Error("expected null tags when none present")
 	}
+	if !obj.Attributes()["analytics"].IsNull() {
+		t.Error("expected null analytics when the rule wasn't fetched with include_analytics")
+	}
+}
+
+func TestAnalyticsToObject(t *testing.T) {
+	var d diag.Diagnostics
+
+	null := analyticsToObject(nil, &d)
+	noErr(t, d)
+	if !null.IsNull() {
+		t.Error("expected a null object when analytics is nil")
+	}
+
+	obj := analyticsToObject(&client.AnalyticsAttributes{
+		AnalyticsStartDate: "2026-08-05",
+		AnalyticsEndDate:   "2026-08-11",
+		RequestsProcessed:  14832,
+	}, &d)
+	noErr(t, d)
+	attrs := obj.Attributes()
+
+	startDate, ok := attrs["analytics_start_date"].(types.String)
+	if !ok {
+		t.Fatalf("analytics_start_date is a %T, not types.String", attrs["analytics_start_date"])
+	}
+	if got := startDate.ValueString(); got != "2026-08-05" {
+		t.Errorf("analytics_start_date = %q", got)
+	}
+
+	endDate, ok := attrs["analytics_end_date"].(types.String)
+	if !ok {
+		t.Fatalf("analytics_end_date is a %T, not types.String", attrs["analytics_end_date"])
+	}
+	if got := endDate.ValueString(); got != "2026-08-11" {
+		t.Errorf("analytics_end_date = %q", got)
+	}
+
+	requests, ok := attrs["requests_processed"].(types.Int64)
+	if !ok {
+		t.Fatalf("requests_processed is a %T, not types.Int64", attrs["requests_processed"])
+	}
+	if got := requests.ValueInt64(); got != 14832 {
+		t.Errorf("requests_processed = %d", got)
+	}
+}
+
+func TestRuleToObjectIncludesAnalyticsWhenPresent(t *testing.T) {
+	ctx := context.Background()
+	var d diag.Diagnostics
+
+	rule := client.Rule{
+		ID: "r1",
+		Attributes: client.RuleAttributes{
+			TargetURL:  "d.com",
+			SourceURLs: []string{"a.com"},
+			Analytics: &client.AnalyticsAttributes{
+				AnalyticsStartDate: "2026-08-05",
+				AnalyticsEndDate:   "2026-08-11",
+				RequestsProcessed:  14832,
+			},
+		},
+	}
+	obj := ruleToObject(ctx, rule, &d)
+	noErr(t, d)
+	analytics := obj.Attributes()["analytics"]
+	if analytics.IsNull() {
+		t.Fatal("expected analytics to be populated")
+	}
 }
 
 func TestSetStringConversions(t *testing.T) {

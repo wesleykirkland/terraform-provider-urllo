@@ -17,3 +17,8 @@ output "urllo_rule_example3" {
   description = "Full output from example 3"
   value       = urllo_rule.example3
 }
+
+output "example3_requests_past_week" {
+  description = "Requests processed by the example3 rule over the past week."
+  value       = one(data.urllo_rules.example3_analytics.rules).analytics.requests_processed
+}

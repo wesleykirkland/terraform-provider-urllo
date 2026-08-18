@@ -219,7 +219,7 @@ func (r *RuleResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	rule, err := r.client.GetRule(ctx, data.ID.ValueString())
+	rule, err := r.client.GetRule(ctx, data.ID.ValueString(), client.ListRulesOptions{})
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading rule", err.Error())
 		return
