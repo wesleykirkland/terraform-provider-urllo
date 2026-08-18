@@ -35,6 +35,15 @@ fmt: hooks
 vet: hooks
 	go vet ./...
 
+# govulncheck does reachability analysis against Go's vulnerability database
+# (not just version matching), so it only flags vulnerable code actually
+# reachable from this module. Installed as a go.mod `tool` dependency (see
+# the `tool` directive at the bottom of go.mod) rather than `go install
+# pkg@latest`, so its own dependency graph is pinned via go.sum like
+# everything else this repo builds.
+govulncheck: hooks
+	go tool govulncheck ./...
+
 test: hooks vet
 	go test -v -race -cover -timeout=120s -parallel=10 ./...
 
@@ -88,4 +97,4 @@ cover-new: hooks
 	TF_ACC=1 go test -timeout 30m -coverprofile=coverage.out ./...
 	COVER_MIN=$(COVER_MIN) $(PYTHON) scripts/check_new_code_coverage.py
 
-.PHONY: fmt lint vet test testacc cover cover-new build install generate check-docs check-api-spec lint-py test-py hooks
+.PHONY: fmt lint vet govulncheck test testacc cover cover-new build install generate check-docs check-api-spec lint-py test-py hooks

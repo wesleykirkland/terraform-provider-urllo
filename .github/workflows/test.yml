@@ -19,6 +19,11 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # Overrides the workflow-level contents:read default so this job can also
+    # upload the Trivy secret-scan SARIF below.
+    permissions:
+      contents: read # checkout
+      security-events: write # upload SARIF
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       # Utilize mise for CI and local
@@ -34,6 +39,35 @@ jobs:
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
           version: latest
+      # Same check pre-commit runs locally (see GNUmakefile's govulncheck
+      # target and .githooks/pre-commit) -- CI is the authoritative
+      # enforcement, pre-commit is the fast local mirror.
+      - name: make govulncheck
+        run: make govulncheck
+
+      # Secret scanning -- repo-wide (not just terraform/, unlike the Trivy
+      # config scan in terraform.yml), since a leaked credential can land in
+      # any file type. Runs here rather than terraform.yml because this job
+      # gates every PR (paths-ignore: README.md only); terraform.yml's
+      # trigger paths are narrower.
+      - name: Run Trivy (secret scan)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scanners: secret
+          scan-ref: .
+          format: sarif
+          output: repo-trivy-secrets.sarif
+          exit-code: '0'
+        continue-on-error: true
+
+      - name: Upload Trivy secret-scan results
+        if: always() && hashFiles('repo-trivy-secrets.sarif') != ''
+        uses: github/codeql-action/upload-sarif@e0647621c2984b5ed2f768cb892365bf2a616ad1 # v4
+        with:
+          sarif_file: repo-trivy-secrets.sarif
+          category: trivy-secrets
+        continue-on-error: true
 
   # Unit tests run on every push/PR and require no credentials. Acceptance tests
   # are gated behind TF_ACC, so they do not run here.
