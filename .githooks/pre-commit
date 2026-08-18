@@ -82,6 +82,9 @@ def main() -> int:
     if run_step(root, "new-code coverage", ["make", "cover-new"]) != 0:
         return 1
 
+    if run_step(root, "govulncheck", ["make", "govulncheck"]) != 0:
+        return 1
+
     if run_step(root, "doc completeness", ["make", "check-docs"]) != 0:
         return 1
 
