@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) Wesley Kirkland-Daily
+# Copyright Wesley Kirkland-Daily 2026
 # SPDX-License-Identifier: MPL-2.0
 
 """Unit tests for check_new_code_coverage.py.
