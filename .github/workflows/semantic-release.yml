@@ -1,10 +1,9 @@
-# Automatic semantic releases.
+# Manually-triggered semantic release.
 #
-# Only runs when a push to main touches the provider's own Go source (paths
-# below) - doc-only, terraform/ example, or CI-only changes don't warrant a
-# new provider release and shouldn't cut a tag. When it does run, it computes
-# the next version from the Conventional Commit history (fix -> patch,
-# feat -> minor, "BREAKING CHANGE" / "!" -> major). When a release is
+# Run manually from the Actions tab (workflow_dispatch) when main is ready
+# to be released -- it no longer runs automatically on push. When run, it
+# computes the next version from the Conventional Commit history (fix ->
+# patch, feat -> minor, "BREAKING CHANGE" / "!" -> major). When a release is
 # warranted it:
 #   1. Generates the changelog entry for the unreleased commits with git-cliff
 #      and prepends it to CHANGELOG.md.
@@ -36,16 +35,6 @@
 name: Semantic Release
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'internal/**'
-      - 'main.go'
-      - 'main_test.go'
-      - 'go.mod'
-      - 'go.sum'
-      - '.github/workflows/semantic-release.yml'
   workflow_dispatch:
 
 # No repo-level permissions needed for GITHUB_TOKEN: every step below acts
