@@ -11,6 +11,11 @@ on:
   pull_request:
     paths-ignore:
       - 'README.md'
+  # GitHub Actions cron always runs in UTC, which doesn't shift for DST, so
+  # this is pinned to 10:00 UTC (6 AM EDT). During EST (roughly early
+  # November - mid March) this runs at 5 AM ET instead of 6 AM.
+  schedule:
+    - cron: '0 10 * * 1'
 
 # Only needs permissions to read the repository contents.
 permissions:
