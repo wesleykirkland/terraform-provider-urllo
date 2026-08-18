@@ -16,14 +16,52 @@
       "enabled": false
     },
     {
-      "description": "Consolidate every non-major update (Go modules + GitHub Actions, all directories) into a single PR.",
+      "description": "GitHub Actions, non-major.",
+      "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest", "bump"],
-      "groupName": "all non-major dependencies"
+      "groupName": "Actions Minor"
     },
     {
-      "description": "Consolidate every major update into a single PR, kept separate from non-major so breaking changes are reviewed on their own.",
+      "description": "GitHub Actions, major -- reviewed separately since these can be breaking.",
+      "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["major"],
-      "groupName": "all major dependencies"
+      "groupName": "Actions Major"
+    },
+    {
+      "description": "Go modules, non-major.",
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest", "bump"],
+      "groupName": "Go Minor"
+    },
+    {
+      "description": "Go modules, major -- reviewed separately since these can be breaking.",
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "Go Major"
+    },
+    {
+      "description": "mise-managed toolchain pins (mise.toml: go, terraform, golangci-lint, python, ruff, coverage, node), non-major.",
+      "matchManagers": ["mise"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest", "bump"],
+      "groupName": "Mise Minor"
+    },
+    {
+      "description": "mise-managed toolchain pins, major -- reviewed separately since these can be breaking.",
+      "matchManagers": ["mise"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "Mise Major"
+    },
+    {
+      "description": "npm devDependencies (semantic-release and its plugins), non-major.",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest", "bump"],
+      "groupName": "NPM Minor"
+    },
+    {
+      "description": "npm devDependencies, major -- reviewed separately since these can be breaking.",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "NPM Major"
     }
   ]
 }
