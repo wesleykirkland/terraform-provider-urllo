@@ -1,10 +1,11 @@
 # Manually-triggered semantic release.
 #
 # Run manually from the Actions tab (workflow_dispatch) when main is ready
-# to be released -- it no longer runs automatically on push. When run, it
-# computes the next version from the Conventional Commit history (fix ->
-# patch, feat -> minor, "BREAKING CHANGE" / "!" -> major). When a release is
-# warranted it:
+# to be released -- it no longer runs automatically on push. The job only
+# runs when dispatched against main (see the job's `if`), since the Actions
+# UI otherwise lets you dispatch from any branch. When run, it computes the
+# next version from the Conventional Commit history (fix -> patch, feat ->
+# minor, "BREAKING CHANGE" / "!" -> major). When a release is warranted it:
 #   1. Generates the changelog entry for the unreleased commits with git-cliff
 #      and prepends it to CHANGELOG.md.
 #   2. Commits that file to main (as wesleykirkland-release-bot[bot]).
@@ -50,6 +51,9 @@ jobs:
   tag:
     name: Tag next version
     runs-on: ubuntu-latest
+    # Manual dispatch can be run from any branch in the UI, but releases must
+    # only ever be cut from main.
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Generate App token
         id: app_token
