@@ -1,4 +1,4 @@
-// Copyright (c) Wesley Kirkland-Daily
+// Copyright Wesley Kirkland-Daily 2026
 // SPDX-License-Identifier: MPL-2.0
 
 // Package client is a small typed HTTP client for the Urllo redirection API
