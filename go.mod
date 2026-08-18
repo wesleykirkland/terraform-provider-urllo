@@ -1,6 +1,6 @@
 module github.com/wesleykirkland/terraform-provider-urllo
 
-go 1.25.8
+go 1.25.13
 
 require (
 	github.com/hashicorp/go-retryablehttp v0.7.8
