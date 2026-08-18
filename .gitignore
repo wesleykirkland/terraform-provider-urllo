@@ -48,3 +48,5 @@ __pycache__/
 
 # CCE
 settings.json
+
+node_modules

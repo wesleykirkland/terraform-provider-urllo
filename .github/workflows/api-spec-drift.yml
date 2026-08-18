@@ -16,6 +16,7 @@ on:
   # November - mid March) this runs at 5 AM ET instead of 6 AM.
   schedule:
     - cron: '0 10 * * 1'
+  workflow_dispatch:
 
 # Only needs permissions to read the repository contents.
 permissions:

@@ -119,14 +119,30 @@ jobs:
         uses: github/codeql-action/upload-sarif@e0647621c2984b5ed2f768cb892365bf2a616ad1 # v4
         with:
           sarif_file: terraform-checkov.sarif
+          category: checkov
         continue-on-error: true
 
-      - name: Run tfsec
+      # tfsec is deprecated -- upstream (Aqua Security) folded it into Trivy,
+      # and tfsec's own release assets stopped publishing, breaking the old
+      # action outright. `scan-type: config` is Trivy's equivalent
+      # misconfiguration/IaC scan (the successor to what tfsec did).
+      - name: Run Trivy (Terraform config scan)
         if: github.event.action != 'labeled'
-        uses: aquasecurity/tfsec-action@b466648d6e39e7c75324f25d83891162a721f2d6 # v1.0.3
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          working_directory: ${{ env.TF_WORKING_DIR }}
-          soft_fail: true
+          scan-type: config
+          scan-ref: ${{ env.TF_WORKING_DIR }}
+          format: sarif
+          output: terraform-trivy.sarif
+          exit-code: '0'
+        continue-on-error: true
+
+      - name: Upload Trivy results
+        if: github.event.action != 'labeled' && always() && hashFiles('terraform-trivy.sarif') != ''
+        uses: github/codeql-action/upload-sarif@e0647621c2984b5ed2f768cb892365bf2a616ad1 # v4
+        with:
+          sarif_file: terraform-trivy.sarif
+          category: trivy
         continue-on-error: true
 
       # Apply is temporarily disabled -- always plan, regardless of trigger.

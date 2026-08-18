@@ -1,17 +1,25 @@
 # Manually-triggered semantic release.
 #
 # Run manually from the Actions tab (workflow_dispatch) when main is ready
-# to be released -- it no longer runs automatically on push. When run, it
-# computes the next version from the Conventional Commit history (fix ->
-# patch, feat -> minor, "BREAKING CHANGE" / "!" -> major). When a release is
-# warranted it:
-#   1. Generates the changelog entry for the unreleased commits with git-cliff
-#      and prepends it to CHANGELOG.md.
-#   2. Commits that file to main (as wesleykirkland-release-bot[bot]).
-#   3. Tags that commit vX.Y.Z and pushes the tag.
-# Pushing the tag triggers the existing GoReleaser workflow (release.yml), which
-# builds and publishes the signed provider artifacts and (via .goreleaser.yml's
-# changelog config) writes the same grouped notes to the GitHub Release body.
+# to be released -- it no longer runs automatically on push. The job only
+# runs when dispatched against main (see the job's `if`), since the Actions
+# UI otherwise lets you dispatch from any branch. It delegates the whole
+# release decision to the `semantic-release` CLI (see package.json and
+# .releaserc.json), which:
+#   1. Computes the next version from the Conventional Commit history since
+#      the last vX.Y.Z tag (fix -> patch, feat -> minor, "BREAKING CHANGE" /
+#      "!" -> major; no relevant commits -> no-op, exits 0).
+#   2. Generates the changelog entry for those commits and prepends it to
+#      CHANGELOG.md (@semantic-release/release-notes-generator +
+#      @semantic-release/changelog).
+#   3. Commits that file to main (as wesleykirkland-release-bot[bot]) and
+#      tags/pushes it as vX.Y.Z (@semantic-release/git plus semantic-release
+#      core, which owns the actual git tag + push).
+# `.releaserc.json` deliberately excludes @semantic-release/github: pushing
+# the tag triggers the existing GoReleaser workflow (release.yml), which
+# builds and publishes the signed provider artifacts and (via
+# .goreleaser.yml's changelog config) writes its own grouped notes to the
+# GitHub Release body, independent of CHANGELOG.md.
 #
 # The chore(release) commit itself does not trigger another release: it carries
 # no feat:/fix:/! marker, so the next dry run computes no bump and the job
@@ -50,6 +58,9 @@ jobs:
   tag:
     name: Tag next version
     runs-on: ubuntu-latest
+    # Manual dispatch can be run from any branch in the UI, but releases must
+    # only ever be cut from main.
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Generate App token
         id: app_token
@@ -66,59 +77,28 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.app_token.outputs.token }}
 
-      # Computes the next semver from Conventional Commits without tagging yet,
-      # so the changelog can be committed before the tag is created.
-      - name: Compute next version
-        id: version
-        uses: mathieudutour/github-tag-action@a22cf08638b34d5badda920f9daf6e72c477b07b # v6.2
-        with:
-          github_token: ${{ steps.app_token.outputs.token }}
-          release_branches: main
-          default_bump: false # only release when commits warrant it
-          tag_prefix: v
-          dry_run: true
+      # Utilize mise for CI and local; node is pinned in mise.toml solely to
+      # run the semantic-release CLI below.
+      - uses: jdx/mise-action@9e7f7633ff6f6d6048a9418a68d48f288f50eb14 # v4.2.3
 
-      # git-cliff-action splices its `args` input into a shell command
-      # internally, so validate the computed tag is a plain vX.Y.Z string
-      # before it flows in below -- guards against expression/command
-      # injection if a future change to the version-compute step ever lets
-      # new_tag carry shell metacharacters.
-      - name: Validate computed tag
-        if: steps.version.outputs.new_tag != ''
-        env:
-          NEW_TAG: ${{ steps.version.outputs.new_tag }}
-        run: |
-          if [[ ! "$NEW_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Computed tag '$NEW_TAG' is not a plain vX.Y.Z version; refusing to use it." >&2
-            exit 1
-          fi
+      # --ignore-scripts: none of the pinned packages need install-time
+      # lifecycle scripts, so skip them rather than trust the dependency
+      # tree to run arbitrary code during install.
+      - run: npm ci --ignore-scripts
 
-      - name: Generate changelog
-        if: steps.version.outputs.new_tag != ''
-        uses: orhun/git-cliff-action@f50e11560dce63f7c33227798f90b924471a88b5 # v4.8.0
-        with:
-          config: cliff.toml
-          args: --tag ${{ steps.version.outputs.new_tag }} --unreleased --prepend CHANGELOG.md
-        env:
-          GITHUB_TOKEN: ${{ steps.app_token.outputs.token }}
-
-      - name: Commit changelog
-        if: steps.version.outputs.new_tag != ''
+      - name: Configure git identity
         env:
           APP_SLUG: ${{ steps.app_token.outputs.app-slug }}
           APP_ID: ${{ secrets.APP_ID }}
-          NEW_TAG: ${{ steps.version.outputs.new_tag }}
         run: |
           git config user.name "${APP_SLUG}[bot]"
           git config user.email "${APP_ID}+${APP_SLUG}[bot]@users.noreply.github.com"
-          git add CHANGELOG.md
-          git commit -m "chore(release): ${NEW_TAG}"
-          git push origin HEAD:main
 
-      - name: Tag release
-        if: steps.version.outputs.new_tag != ''
+      - name: Release
         env:
-          NEW_TAG: ${{ steps.version.outputs.new_tag }}
-        run: |
-          git tag "${NEW_TAG}"
-          git push origin "${NEW_TAG}"
+          # Not required by the plugin set in .releaserc.json (no
+          # @semantic-release/github), but harmless to pass through.
+          GITHUB_TOKEN: ${{ steps.app_token.outputs.token }}
+        # --no-install: run the exact version `npm ci` just installed from
+        # package-lock.json, rather than letting npx resolve/fetch anything.
+        run: npx --no-install semantic-release
