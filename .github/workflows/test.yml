@@ -114,7 +114,7 @@ jobs:
       # fail_ci_if_error defaults to false, so a missing/bad CODECOV_TOKEN
       # warns rather than failing this required check.
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@5975040f7f7d40edaff8d784b576fd65ae95c073 # v5.5.5
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
