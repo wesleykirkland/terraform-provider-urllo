@@ -127,6 +127,7 @@ jobs:
         with:
           working_directory: ${{ env.TF_WORKING_DIR }}
           soft_fail: true
+          github_token: ${{ github.token }}
         continue-on-error: true
 
       # Apply is temporarily disabled -- always plan, regardless of trigger.
