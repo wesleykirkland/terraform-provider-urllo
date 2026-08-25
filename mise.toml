@@ -7,12 +7,12 @@
 # CLI versions side by side), and the ruff/coverage pins also used by
 # scripts/run_python_tests.py's CI step. `node` is used by semantic-release.yml
 # only, to run the semantic-release CLI (see package.json).
-go = "1.26"
-golangci-lint = "2.12"
+go = "1.27.0"
+golangci-lint = "2.13.1"
 terraform = "1.15"
 node = "24" # Only LTS versions are supported
 
 # Python
 python = "3"
-ruff = "0.16.3"
+ruff = "0.16.4"
 "pipx:coverage" = "7.15.4"
