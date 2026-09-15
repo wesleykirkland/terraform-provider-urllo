@@ -63,7 +63,7 @@ jobs:
 
       - name: Upload Trivy secret-scan results
         if: always() && hashFiles('repo-trivy-secrets.sarif') != ''
-        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
+        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4
         with:
           sarif_file: repo-trivy-secrets.sarif
           category: trivy-secrets
@@ -114,7 +114,7 @@ jobs:
       # fail_ci_if_error defaults to false, so a missing/bad CODECOV_TOKEN
       # warns rather than failing this required check.
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4 # v7.1.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
