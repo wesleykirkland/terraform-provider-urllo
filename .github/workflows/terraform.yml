@@ -107,7 +107,7 @@ jobs:
       # Security scanning — runs on every event except label-only triggers.
       - name: Run Checkov
         if: github.event.action != 'labeled'
-        uses: bridgecrewio/checkov-action@f967808197a8d784d3e72919f38c3ff0cda7884e # v12.3122.0
+        uses: bridgecrewio/checkov-action@a8664e3a0549367977f0cda990a34311835c87c0 # v12.3123.0
         with:
           directory: ${{ env.TF_WORKING_DIR }}
           framework: terraform
@@ -116,7 +116,7 @@ jobs:
 
       - name: Upload Checkov results
         if: github.event.action != 'labeled' && always() && hashFiles('terraform-checkov.sarif') != ''
-        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
+        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4
         with:
           sarif_file: terraform-checkov.sarif
           category: checkov
@@ -139,7 +139,7 @@ jobs:
 
       - name: Upload Trivy results
         if: github.event.action != 'labeled' && always() && hashFiles('terraform-trivy.sarif') != ''
-        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
+        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4
         with:
           sarif_file: terraform-trivy.sarif
           category: trivy
