@@ -9,10 +9,10 @@
 # only, to run the semantic-release CLI (see package.json).
 go = "1.27.1"
 golangci-lint = "2.13.2"
-terraform = "1.16.1"
+terraform = "1.16.3"
 node = "24" # Only LTS versions are supported
 
 # Python
 python = "3"
-ruff = "0.16.5"
-"pipx:coverage" = "7.16.0"
+ruff = "0.16.8"
+"pipx:coverage" = "7.16.1"
