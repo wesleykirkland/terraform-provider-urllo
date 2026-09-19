@@ -72,11 +72,8 @@
   ],
   "description": "postUpdateOptions.gomodTidy: Renovate's `go get` only records the /go.mod hashes needed for module-graph resolution, not the h1: zip hashes needed to build a package -- without a tidy, go.sum ships incomplete and `go tool govulncheck` dies with 'missing go.sum entry'. Bit this repo twice (#21, #28).",
   "postUpdateOptions": ["gomodTidy"],
-  "osvVulnerabilityAlerts": true,
   "vulnerabilityAlerts": {
-    "description": "Security fixes must not wait for the Monday window -- an empty schedule lets them raise a PR as soon as an advisory lands.",
-    "enabled": true,
-    "schedule": [],
-    "labels": ["dependencies", "security"]
+    "description": "Renovate's vulnerability handling defaults to groupName:null and branchTopic '{{{datasource}}}-{{{depName}}}-vulnerability', so every advisory becomes its own off-schedule PR -- bypassing the Go Minor/Go Major grouping below. Enabling it (with osvVulnerabilityAlerts) produced four such PRs in a day, all for indirect deps of tools/go.mod, which only builds copywrite and tfplugindocs at generate time and ships nothing in the provider binary. Disabled so every update follows the same grouped schema; these deps still get updated, just batched into the weekly Go Minor/Go Major PRs. The real gate stays `make govulncheck` in CI, which does reachability analysis on the root module for every PR rather than matching versions.",
+    "enabled": false
   }
 }
