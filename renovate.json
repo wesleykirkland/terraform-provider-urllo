@@ -10,7 +10,7 @@
   "schedule": ["before 6am on monday"],
   "packageRules": [
     {
-      "description": "Indirect Go deps are disabled by default -- only `tool` directive deps (golang.org/x/vuln) slip through, which is why google.golang.org/grpc sat at a vulnerable v1.82.1 with no bump PR until govulncheck flagged it in #28. Enabling them means transitive CVE fixes actually get raised; they still land grouped in the Go Minor/Major rules below.",
+      "description": "Indirect Go deps are disabled by default -- only `tool` directive deps (golang.org/x/vuln) slip through. So when GO-2026-6443/GO-2026-6348 landed against google.golang.org/grpc v1.82.1, Renovate raised no bump PR and the v1.83.2 fix had to be hand-added onto an unrelated Actions PR (#27) after govulncheck failed. Enabling indirect deps means Renovate proposes transitive CVE fixes itself; they still land grouped in the Go Minor/Major rules below.",
       "matchManagers": ["gomod"],
       "matchDepTypes": ["indirect"],
       "enabled": true
