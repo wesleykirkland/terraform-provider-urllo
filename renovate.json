@@ -10,6 +10,12 @@
   "schedule": ["before 6am on monday"],
   "packageRules": [
     {
+      "description": "Indirect Go deps are disabled by default -- only `tool` directive deps (golang.org/x/vuln) slip through. So when GO-2026-6443/GO-2026-6348 landed against google.golang.org/grpc v1.82.1, Renovate raised no bump PR and the v1.83.2 fix had to be hand-added onto an unrelated Actions PR (#27) after govulncheck failed. Enabling indirect deps means Renovate proposes transitive CVE fixes itself; they still land grouped in the Go Minor/Major rules below.",
+      "matchManagers": ["gomod"],
+      "matchDepTypes": ["indirect"],
+      "enabled": true
+    },
+    {
       "description": "terraform/version.tf pins the urllo provider to 0.0.1 to match ./build-local.sh's local filesystem-mirror build, not a registry release -- this repo IS that provider, so Renovate bumping it against the registry is both circular and wrong for local dev.",
       "matchDatasources": ["terraform-provider"],
       "matchPackageNames": ["wesleykirkland/urllo"],
@@ -63,5 +69,14 @@
       "matchUpdateTypes": ["major"],
       "groupName": "NPM Major"
     }
-  ]
+  ],
+  "description": "postUpdateOptions.gomodTidy: Renovate's `go get` only records the /go.mod hashes needed for module-graph resolution, not the h1: zip hashes needed to build a package -- without a tidy, go.sum ships incomplete and `go tool govulncheck` dies with 'missing go.sum entry'. Bit this repo twice (#21, #28).",
+  "postUpdateOptions": ["gomodTidy"],
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "description": "Security fixes must not wait for the Monday window -- an empty schedule lets them raise a PR as soon as an advisory lands.",
+    "enabled": true,
+    "schedule": [],
+    "labels": ["dependencies", "security"]
+  }
 }
