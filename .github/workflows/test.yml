@@ -29,6 +29,21 @@ jobs:
       # Utilize mise for CI and local
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - run: go mod download
+      # go.sum drift guard. Renovate bumps versions with `go get`, which records
+      # only the /go.mod hashes needed for module-graph resolution -- not the
+      # h1: module-zip hashes needed to actually build a package. The resulting
+      # incomplete go.sum surfaces far downstream as a cryptic "missing go.sum
+      # entry" in whichever step builds first (in PR #28, `go tool govulncheck`,
+      # which also meant the vuln scan silently stopped running). Checking here
+      # fails fast with an actionable message, and catches a stale go.sum from
+      # any source -- Renovate, a hand edit, a bad merge -- not just Renovate.
+      - name: go.mod / go.sum are tidy
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum || {
+            echo "::error::go.mod/go.sum are not tidy -- run 'go mod tidy' and commit the result"
+            exit 1
+          }
       - name: make build
         run: make build
       - name: make lint-py
@@ -63,7 +78,7 @@ jobs:
 
       - name: Upload Trivy secret-scan results
         if: always() && hashFiles('repo-trivy-secrets.sarif') != ''
-        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
+        uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4
         with:
           sarif_file: repo-trivy-secrets.sarif
           category: trivy-secrets
@@ -105,7 +120,7 @@ jobs:
       # check posts on the PR. See sonar-project.properties for the
       # reportPaths wiring.
       - name: SonarCloud scan
-        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
+        uses: SonarSource/sonarqube-scan-action@ba9859eae8dd6bd29e412f25ddbbef3d032000f4 # v8.2.2
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
@@ -114,7 +129,7 @@ jobs:
       # fail_ci_if_error defaults to false, so a missing/bad CODECOV_TOKEN
       # warns rather than failing this required check.
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
