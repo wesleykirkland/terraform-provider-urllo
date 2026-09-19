@@ -29,6 +29,21 @@ jobs:
       # Utilize mise for CI and local
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - run: go mod download
+      # go.sum drift guard. Renovate bumps versions with `go get`, which records
+      # only the /go.mod hashes needed for module-graph resolution -- not the
+      # h1: module-zip hashes needed to actually build a package. The resulting
+      # incomplete go.sum surfaces far downstream as a cryptic "missing go.sum
+      # entry" in whichever step builds first (in PR #28, `go tool govulncheck`,
+      # which also meant the vuln scan silently stopped running). Checking here
+      # fails fast with an actionable message, and catches a stale go.sum from
+      # any source -- Renovate, a hand edit, a bad merge -- not just Renovate.
+      - name: go.mod / go.sum are tidy
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum || {
+            echo "::error::go.mod/go.sum are not tidy -- run 'go mod tidy' and commit the result"
+            exit 1
+          }
       - name: make build
         run: make build
       - name: make lint-py
