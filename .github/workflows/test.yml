@@ -78,7 +78,7 @@ jobs:
 
       - name: Upload Trivy secret-scan results
         if: always() && hashFiles('repo-trivy-secrets.sarif') != ''
-        uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4
+        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4
         with:
           sarif_file: repo-trivy-secrets.sarif
           category: trivy-secrets
@@ -120,7 +120,7 @@ jobs:
       # check posts on the PR. See sonar-project.properties for the
       # reportPaths wiring.
       - name: SonarCloud scan
-        uses: SonarSource/sonarqube-scan-action@ba9859eae8dd6bd29e412f25ddbbef3d032000f4 # v8.2.2
+        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
