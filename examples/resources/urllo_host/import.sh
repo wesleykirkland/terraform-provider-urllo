@@ -1,2 +1,2 @@
-# Hosts are imported by their Urllo host ID.
+# Hosts are imported by their urllo host ID.
 terraform import urllo_host.example abc-def

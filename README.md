@@ -1,9 +1,9 @@
-# Terraform Provider for Urllo
+# Terraform Provider for urllo
 
-A [Terraform](https://www.terraform.io) provider for the [Urllo](https://urllo.com)
+A [Terraform](https://www.terraform.io) provider for the [urllo](https://urllo.com)
 redirection service, built on the [Terraform Plugin Framework](https://github.com/hashicorp/terraform-plugin-framework).
 
-It covers the entire Urllo API:
+It covers the entire urllo API:
 
 | Family | Terraform |
 | ------ | --------- |
@@ -21,7 +21,7 @@ It covers the entire Urllo API:
 terraform {
   required_providers {
     urllo = {
-      source = "wesleykirkland/urllo"
+      source = "urllo/urllo"
     }
   }
 }
@@ -57,7 +57,7 @@ The client automatically retries rate-limited (`429`) and `5xx` responses with
 backoff, and sends an `Idempotency-Key` on every write.
 
 `include_dns_tested_at` controls whether `urllo_host`'s read-only
-`dns_tested_at` attribute is populated. It defaults to `false` because Urllo
+`dns_tested_at` attribute is populated. It defaults to `false` because urllo
 re-tests DNS on its own schedule, independent of anything Terraform manages —
 surfacing the timestamp would make `dns_tested_at` show as changed on every
 refresh even though nothing actionable changed. Set it to `true` if you
@@ -95,12 +95,12 @@ resource "urllo_rule" "example" {
 }
 ```
 
-Read-only after creation: `id`, `name` (Urllo-assigned), `certificate_status`,
+Read-only after creation: `id`, `name` (urllo-assigned), `certificate_status`,
 `dns_status`.
 
 ### `urllo_host`
 
-Hosts must already exist in Urllo (added via the dashboard + DNS); this
+Hosts must already exist in urllo (added via the dashboard + DNS); this
 resource *adopts* one by `name` rather than creating it, and destroying the
 resource only removes it from state — it does not delete the host.
 
@@ -142,7 +142,7 @@ provider's `include_dns_tested_at = true`).
 ### DNS validation for rules
 
 Like [`aws_acm_certificate_validation`](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/acm_certificate_validation), `urllo_rule` can wait until each source
-host's DNS resolves to the values Urllo requires before completing. This is
+host's DNS resolves to the values urllo requires before completing. This is
 enabled by default; disable it with `validate_dns = false` (for example, before
 you have cut DNS over):
 
@@ -183,9 +183,7 @@ make testacc               # acceptance tests (see below)
 
 Running any `make` target points git's hooks at [`.githooks/`](.githooks/)
 (the `hooks` target sets `core.hooksPath`), so there's nothing to install
-manually -- the same self-configuring approach as husky's npm `prepare`
-script, just triggered by `make` instead of `npm install`. From then on,
-every commit in this clone runs [`.githooks/pre-commit`](.githooks/pre-commit):
+manually. From then on, every commit in this clone runs [`.githooks/pre-commit`](.githooks/pre-commit):
 a `gofmt` check, `make lint`, `make test`, `make check-docs`, `make test-py`,
 and `make lint-py`. `lint` and `lint-py` are skipped locally (with a warning)
 if `golangci-lint` / `ruff` aren't on `PATH` -- CI still enforces both. None
@@ -207,14 +205,14 @@ Acceptance tests run through the real Terraform plugin protocol and are gated
 behind `TF_ACC`. There are two flavours:
 
 - **Mock-backed** (`TestAccMock*`) run the full provider CRUD against an
-  in-memory Urllo API. They need **no credentials** and never touch your
+  in-memory urllo API. They need **no credentials** and never touch your
   account, so CI runs them on every push. Just:
 
   ```shell
   TF_ACC=1 go test ./internal/provider/ -run TestAccMock
   ```
 
-- **Live** tests create real resources against a Urllo account and additionally
+- **Live** tests create real resources against a urllo account and additionally
   require credentials and a domain your account controls:
 
   ```shell

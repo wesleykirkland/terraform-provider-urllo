@@ -3,17 +3,17 @@
 page_title: "urllo_host Resource - urllo"
 subcategory: ""
 description: |-
-  Manages the settings of an existing source host. Hosts are created by adding a domain in the Urllo dashboard and configuring DNS; this resource adopts a host by name and manages its writable settings. Destroying the resource removes it from Terraform state only — the host is not deleted from Urllo.
+  Manages the settings of an existing source host. Hosts are created by adding a domain in the urllo dashboard and configuring DNS; this resource adopts a host by name and manages its writable settings. Destroying the resource removes it from Terraform state only — the host is not deleted from urllo.
 ---
 
 # urllo_host (Resource)
 
-Manages the settings of an existing source host. Hosts are created by adding a domain in the Urllo dashboard and configuring DNS; this resource adopts a host by `name` and manages its writable settings. Destroying the resource removes it from Terraform state only — the host is not deleted from Urllo.
+Manages the settings of an existing source host. Hosts are created by adding a domain in the urllo dashboard and configuring DNS; this resource adopts a host by `name` and manages its writable settings. Destroying the resource removes it from Terraform state only — the host is not deleted from urllo.
 
 ## Example Usage
 
 ```terraform
-# Hosts are provisioned by adding a domain in the Urllo dashboard and configuring
+# Hosts are provisioned by adding a domain in the urllo dashboard and configuring
 # DNS. This resource adopts an existing host by name and manages its settings.
 # Destroying it removes the resource from state only; the host is not deleted.
 resource "urllo_host" "example" {
@@ -42,7 +42,7 @@ resource "urllo_host" "example" {
   }
 }
 
-# Serves a custom body instead of Urllo's default page when no redirect rule
+# Serves a custom body instead of urllo's default page when no redirect rule
 # matches. custom_404_body only takes effect when not_found_action.response_code
 # is 404. not_found_action and security are independent settings applicable to
 # both host configurations on this page — they're split across these two
@@ -69,12 +69,12 @@ resource "urllo_host" "custom_404" {
 
 ### Required
 
-- `name` (String) The hostname to manage, e.g. `www.example.com`. The host must already exist in Urllo. Changing this adopts a different host.
+- `name` (String) The hostname to manage, e.g. `www.example.com`. The host must already exist in urllo. Changing this adopts a different host.
 
 ### Optional
 
 - `acme_enabled` (Boolean) Whether automatic SSL certificate provisioning is enabled.
-- `custom_404_body` (String) Custom HTML response body served when no redirect matches, in effect only when `not_found_action.response_code` is `404`. Requires `not_found_action` to be configured (at least `response_code = 404`); it is not applied otherwise. Read back from Urllo on refresh, so content drift is detected like any other attribute; null when no custom body is set.
+- `custom_404_body` (String) Custom HTML response body served when no redirect matches, in effect only when `not_found_action.response_code` is `404`. Requires `not_found_action` to be configured (at least `response_code = 404`); it is not applied otherwise. Read back from urllo on refresh, so content drift is detected like any other attribute; null when no custom body is set.
 - `match_options` (Attributes) How source URLs are matched. (see [below for nested schema](#nestedatt--match_options))
 - `not_found_action` (Attributes) Behaviour when no matching redirect is found. (see [below for nested schema](#nestedatt--not_found_action))
 - `security` (Attributes) HTTPS and HSTS security settings. (see [below for nested schema](#nestedatt--security))
@@ -84,7 +84,7 @@ resource "urllo_host" "custom_404" {
 - `certificate_status` (String) Current certificate status.
 - `detected_dns_entries` (Attributes List) Currently detected DNS records for this host. (see [below for nested schema](#nestedatt--detected_dns_entries))
 - `dns_status` (String) DNS configuration status: `active`, `invalid`, or `requires_verification`.
-- `dns_tested_at` (String) When the host's DNS was last tested. Null unless the provider's `include_dns_tested_at` is set to `true`: Urllo re-tests DNS on its own schedule, so by default this is left out of state to avoid it showing as changed outside of Terraform on every refresh.
+- `dns_tested_at` (String) When the host's DNS was last tested. Null unless the provider's `include_dns_tested_at` is set to `true`: urllo re-tests DNS on its own schedule, so by default this is left out of state to avoid it showing as changed outside of Terraform on every refresh.
 - `id` (String) Host identifier.
 - `required_dns_entries` (Attributes) DNS records that must be configured for this host. (see [below for nested schema](#nestedatt--required_dns_entries))
 
@@ -176,6 +176,6 @@ Import is supported using the following syntax:
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
-# Hosts are imported by their Urllo host ID.
+# Hosts are imported by their urllo host ID.
 terraform import urllo_host.example abc-def
 ```

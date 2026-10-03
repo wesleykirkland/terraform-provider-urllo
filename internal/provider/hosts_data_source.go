@@ -1,4 +1,4 @@
-// Copyright Wesley Kirkland-Daily 2026
+// Copyright 2026 EasyRedir Inc.
 // SPDX-License-Identifier: MPL-2.0
 
 package provider
@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/wesleykirkland/terraform-provider-urllo/internal/client"
+	"github.com/urllo/terraform-provider-urllo/internal/client"
 )
 
 var _ datasource.DataSource = &HostsDataSource{}

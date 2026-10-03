@@ -1,4 +1,4 @@
-// Copyright Wesley Kirkland-Daily 2026
+// Copyright 2026 EasyRedir Inc.
 // SPDX-License-Identifier: MPL-2.0
 
 package provider
@@ -12,7 +12,7 @@ import (
 )
 
 // The TestAccMock* tests run the full provider CRUD through the real Terraform
-// plugin protocol against an in-memory Urllo API (mock_server_test.go). They are
+// plugin protocol against an in-memory urllo API (mock_server_test.go). They are
 // gated on TF_ACC like other acceptance tests but need no real credentials, so
 // CI can run them without secrets. They point the provider at the mock server
 // and supply dummy credentials via the environment.
@@ -70,7 +70,7 @@ resource "urllo_rule" "test" {
 				ResourceName:      "urllo_rule.test",
 				ImportState:       true,
 				ImportStateVerify: true,
-				// The Urllo API normalizes URLs server-side (e.g. adding a
+				// The urllo API normalizes URLs server-side (e.g. adding a
 				// trailing slash, adding a scheme to bare hostnames), so a
 				// fresh import reflects the API's normalized form rather than
 				// the originally-configured string, even though both refer to
@@ -133,7 +133,7 @@ resource "urllo_host" "test" {
 	})
 }
 
-// TestAccMockHostIncludeDNSTestedAt covers the provider-level opt-in: Urllo
+// TestAccMockHostIncludeDNSTestedAt covers the provider-level opt-in: urllo
 // re-tests DNS on its own schedule, so surfacing dns_tested_at by default
 // causes it to show as changed outside of Terraform on every refresh even
 // though nothing actionable changed. It's null unless a caller explicitly
@@ -277,7 +277,7 @@ data "urllo_host" "byid" {
 data "urllo_hosts" "all" {}
 `, mockHostName, mockHostName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					// The mock (like the real Urllo API) normalizes a path-less
+					// The mock (like the real urllo API) normalizes a path-less
 					// target_url by appending a trailing slash; data sources
 					// faithfully report the server's actual value.
 					resource.TestCheckResourceAttr("data.urllo_rule.by_id", "target_url", "https://dest.example.com/"),

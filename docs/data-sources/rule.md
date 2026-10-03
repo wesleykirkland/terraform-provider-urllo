@@ -42,7 +42,7 @@ output "rule_target" {
 - `dns_status` (String) DNS configuration status of the rule's source host.
 - `forward_params` (Boolean) Whether query parameters are forwarded.
 - `forward_path` (Boolean) Whether the path is forwarded.
-- `name` (String) Display name Urllo assigns to the rule.
+- `name` (String) Display name urllo assigns to the rule.
 - `response_type` (String) Redirect type.
 - `source_urls` (Set of String) URLs the rule redirects from.
 - `tags` (Set of String) Tags associated with the rule.

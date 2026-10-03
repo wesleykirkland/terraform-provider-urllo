@@ -1,4 +1,4 @@
-// Copyright Wesley Kirkland-Daily 2026
+// Copyright 2026 EasyRedir Inc.
 // SPDX-License-Identifier: MPL-2.0
 
 package provider
@@ -13,10 +13,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/wesleykirkland/terraform-provider-urllo/internal/client"
+	"github.com/urllo/terraform-provider-urllo/internal/client"
 )
 
-// mockUrllo is an in-memory implementation of the Urllo API used by mock-backed
+// mockUrllo is an in-memory implementation of the urllo API used by mock-backed
 // acceptance tests. It lets the full provider CRUD path run through the real
 // Terraform plugin protocol without a live account or credentials.
 type mockUrllo struct {
@@ -304,7 +304,7 @@ func containsAny(haystack []string, needle string) bool {
 	return false
 }
 
-// normalizeRuleAttributes mimics the real Urllo API's server-side URL
+// normalizeRuleAttributes mimics the real urllo API's server-side URL
 // normalization: target_url gets a trailing slash when it has no path, and
 // source_urls get an "https://" scheme prefix when bare hostnames are sent.
 // This reproduces the "Provider produced inconsistent result after apply" bug

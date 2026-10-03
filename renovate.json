@@ -18,7 +18,7 @@
     {
       "description": "terraform/version.tf pins the urllo provider to 0.0.1 to match ./build-local.sh's local filesystem-mirror build, not a registry release -- this repo IS that provider, so Renovate bumping it against the registry is both circular and wrong for local dev.",
       "matchDatasources": ["terraform-provider"],
-      "matchPackageNames": ["wesleykirkland/urllo"],
+      "matchPackageNames": ["urllo/urllo"],
       "enabled": false
     },
     {
@@ -46,7 +46,7 @@
       "groupName": "Go Major"
     },
     {
-      "description": "mise-managed toolchain pins (mise.toml: go, terraform, golangci-lint, python, ruff, coverage, node), non-major.",
+      "description": "mise-managed toolchain pins (mise.toml: go, terraform, golangci-lint, python, ruff, coverage), non-major.",
       "matchManagers": ["mise"],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest", "bump"],
       "groupName": "Mise Minor"
@@ -56,18 +56,6 @@
       "matchManagers": ["mise"],
       "matchUpdateTypes": ["major"],
       "groupName": "Mise Major"
-    },
-    {
-      "description": "npm devDependencies (semantic-release and its plugins), non-major.",
-      "matchManagers": ["npm"],
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest", "bump"],
-      "groupName": "NPM Minor"
-    },
-    {
-      "description": "npm devDependencies, major -- reviewed separately since these can be breaking.",
-      "matchManagers": ["npm"],
-      "matchUpdateTypes": ["major"],
-      "groupName": "NPM Major"
     }
   ],
   "description": "postUpdateOptions.gomodTidy: Renovate's `go get` only records the /go.mod hashes needed for module-graph resolution, not the h1: zip hashes needed to build a package -- without a tidy, go.sum ships incomplete and `go tool govulncheck` dies with 'missing go.sum entry'. Bit this repo twice (#21, #28).",

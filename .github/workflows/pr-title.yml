@@ -1,7 +1,7 @@
 # Validates that pull request titles follow the Conventional Commits spec
 # (https://www.conventionalcommits.org). PRs are squash-merged, so the PR title
-# becomes the commit subject that the semantic-release workflow parses to decide
-# the next version.
+# becomes the commit subject that GoReleaser's changelog config (.goreleaser.yml)
+# filters and groups into the GitHub Release notes.
 name: PR Title
 
 on:

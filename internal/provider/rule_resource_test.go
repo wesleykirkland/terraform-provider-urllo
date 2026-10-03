@@ -1,4 +1,4 @@
-// Copyright Wesley Kirkland-Daily 2026
+// Copyright 2026 EasyRedir Inc.
 // SPDX-License-Identifier: MPL-2.0
 
 package provider
@@ -12,7 +12,7 @@ import (
 
 // TestAccRuleResource exercises create, update, and import of urllo_rule.
 // DNS validation is disabled because the randomized test subdomains have no
-// live DNS records. Requires TF_ACC, Urllo credentials, and URLLO_TEST_DOMAIN.
+// live DNS records. Requires TF_ACC, urllo credentials, and URLLO_TEST_DOMAIN.
 func TestAccRuleResource(t *testing.T) {
 	source := testAccSource(t, "tf-acc")
 
@@ -40,7 +40,7 @@ func TestAccRuleResource(t *testing.T) {
 				ResourceName:      "urllo_rule.test",
 				ImportState:       true,
 				ImportStateVerify: true,
-				// The Urllo API normalizes URLs server-side (e.g. adding a
+				// The urllo API normalizes URLs server-side (e.g. adding a
 				// trailing slash, adding a scheme to bare hostnames), so a
 				// fresh import reflects the API's normalized form rather than
 				// the originally-configured string, even though both refer to

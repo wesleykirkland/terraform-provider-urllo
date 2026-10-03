@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     urllo = {
-      source = "wesleykirkland/urllo"
+      source = "urllo/urllo"
     }
   }
 }

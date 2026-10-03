@@ -1,5 +1,4 @@
-# Terraform CI for the ./terraform example, adapted from
-# https://github.com/wesleykirkland/wesleyk.me/blob/main/.github/workflows/terraform.yml
+# Terraform CI for the ./terraform example
 #
 # Flow: run all Go tests -> build the provider from source into a local
 # filesystem mirror (so `terraform init` resolves it without a registry) ->
@@ -101,7 +100,7 @@ jobs:
       - name: Build provider into local mirror
         run: |
           ./terraform/build-local.sh "${PROVIDER_VERSION}"
-          printf 'provider_installation {\n  filesystem_mirror {\n    path    = "%s/.terraform.d/plugins"\n    include = ["registry.terraform.io/wesleykirkland/urllo"]\n  }\n  direct {\n    exclude = ["registry.terraform.io/wesleykirkland/urllo"]\n  }\n}\n' "$HOME" > "$RUNNER_TEMP/mirror.tfrc"
+          printf 'provider_installation {\n  filesystem_mirror {\n    path    = "%s/.terraform.d/plugins"\n    include = ["registry.terraform.io/urllo/urllo"]\n  }\n  direct {\n    exclude = ["registry.terraform.io/urllo/urllo"]\n  }\n}\n' "$HOME" > "$RUNNER_TEMP/mirror.tfrc"
           echo "TF_CLI_CONFIG_FILE=$RUNNER_TEMP/mirror.tfrc" >> "$GITHUB_ENV"
 
       # Security scanning — runs on every event except label-only triggers.

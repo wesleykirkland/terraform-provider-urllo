@@ -23,7 +23,7 @@ Coverage comes from three layers:
    resource/data-source method driven with a deliberately-unreadable request to
    exercise the "cannot decode request" guards.
 3. **Mock-backed acceptance tests** (`TestAccMock*`) — the full CRUD path run
-   through the real Terraform plugin protocol against an in-memory Urllo API,
+   through the real Terraform plugin protocol against an in-memory urllo API,
    including create/read/update/delete errors, disappeared resources, delete
    idempotency, and DNS-validation timeouts. These need no credentials.
 

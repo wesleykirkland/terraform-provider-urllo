@@ -55,7 +55,7 @@ terraform -chdir=terraform plan
 `build-local.sh` builds the provider from source, installs it into the local
 filesystem mirror, and re-inits `terraform/` against that build. `plan`
 requires `URLLO_API_KEY` / `URLLO_API_SECRET` in the environment, since it
-reads real hosts and rules from the live Urllo API — see `terraform/README.md`
+reads real hosts and rules from the live urllo API — see `terraform/README.md`
 for full setup. Review the plan output for unexpected diffs (e.g. attributes
 that shouldn't have changed showing as changed) before reporting the task
 complete.

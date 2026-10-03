@@ -1,6 +1,6 @@
-# Does not require an import as the host already exists in Urllo
+# Does not require an import as the host already exists in urllo
 resource "urllo_host" "example3" {
-  name = trim(one(urllo_rule.example3.source_urls), "/") # Urllo normalizes the hostname with a trailing /
+  name = trim(one(urllo_rule.example3.source_urls), "/") # urllo normalizes the hostname with a trailing /
 
   acme_enabled = true
 
@@ -25,7 +25,7 @@ resource "urllo_host" "example3" {
   }
 }
 
-# Serves a custom body instead of Urllo's default page when no redirect rule
+# Serves a custom body instead of urllo's default page when no redirect rule
 # matches. custom_404_body only takes effect when not_found_action.response_code
 # is 404
 resource "urllo_host" "custom_404" {

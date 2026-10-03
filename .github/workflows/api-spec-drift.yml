@@ -1,6 +1,6 @@
-# Warns (does not fail this workflow or block the PR) when the live Urllo
+# Warns (does not fail this workflow or block the PR) when the live urllo
 # OpenAPI spec has moved past the version this provider was built against.
-# Urllo doesn't publish an API changelog, so this is the only signal we get
+# urllo doesn't publish an API changelog, so this is the only signal we get
 # that upstream may have changed something worth reviewing. Split into its
 # own workflow file (rather than a job in test.yml) since it checks an
 # external, independently-changing resource rather than this repo's own

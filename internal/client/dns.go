@@ -1,4 +1,4 @@
-// Copyright Wesley Kirkland-Daily 2026
+// Copyright 2026 EasyRedir Inc.
 // SPDX-License-Identifier: MPL-2.0
 
 package client

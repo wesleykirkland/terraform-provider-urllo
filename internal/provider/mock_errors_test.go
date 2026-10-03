@@ -1,4 +1,4 @@
-// Copyright Wesley Kirkland-Daily 2026
+// Copyright 2026 EasyRedir Inc.
 // SPDX-License-Identifier: MPL-2.0
 
 package provider
@@ -359,7 +359,7 @@ provider "urllo" {
 
 data "urllo_hosts" "x" {}
 `,
-			ExpectError: regexp.MustCompile("Missing Urllo API key"),
+			ExpectError: regexp.MustCompile("Missing urllo API key"),
 		}},
 	})
 }

@@ -1,4 +1,4 @@
-module github.com/wesleykirkland/terraform-provider-urllo
+module github.com/urllo/terraform-provider-urllo
 
 go 1.26.0
 

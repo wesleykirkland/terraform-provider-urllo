@@ -56,7 +56,7 @@ jobs:
           version: latest
       # Same check pre-commit runs locally (see GNUmakefile's govulncheck
       # target and .githooks/pre-commit) -- CI is the authoritative
-      # enforcement, pre-commit is the fast local mirror.
+      # enforcement; pre-commit only warns on findings.
       - name: make govulncheck
         run: make govulncheck
 
@@ -95,9 +95,6 @@ jobs:
       code-quality: write # upload coverage report
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # SonarCloud needs full history for SCM blame / new-code analysis.
-          fetch-depth: 0
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - run: go mod download
       # `make test` covers both `go vet ./...` and `go test -race -cover ./...`
@@ -111,19 +108,10 @@ jobs:
         run: make cover
       # Runs scripts/test_check_docs.py and writes a Cobertura-format
       # coverage.xml (see scripts/run_python_tests.py) alongside Go's
-      # coverage.out, before the Sonar/Codecov steps below so both get picked
-      # up in the same scan/upload.
+      # coverage.out, before the Codecov step below so both get picked up in
+      # the same upload.
       - name: make test-py
         run: make test-py
-      # Feeds coverage.out (Go, from `make cover`) and coverage.xml (Python,
-      # from `make test-py`) to SonarCloud so the "SonarCloud Code Analysis"
-      # check posts on the PR. See sonar-project.properties for the
-      # reportPaths wiring.
-      - name: SonarCloud scan
-        uses: SonarSource/sonarqube-scan-action@ba9859eae8dd6bd29e412f25ddbbef3d032000f4 # v8.2.2
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: https://sonarcloud.io
       # Feeds coverage.out and coverage.xml to Codecov for PR coverage
       # reports; the uploader auto-detects both when `files:` isn't given.
       # fail_ci_if_error defaults to false, so a missing/bad CODECOV_TOKEN
@@ -152,7 +140,7 @@ jobs:
         run: make check-docs
 
   # Run acceptance tests in a matrix with Terraform CLI versions. These require
-  # Urllo credentials configured as repository secrets; without them the tests
+  # urllo credentials configured as repository secrets; without them the tests
   # skip themselves.
   #
   # Deliberately NOT using mise here, unlike the jobs above: this job needs

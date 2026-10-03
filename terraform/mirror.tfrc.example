@@ -10,10 +10,10 @@
 provider_installation {
   filesystem_mirror {
     path    = "/Users/CHANGE_ME/.terraform.d/plugins"
-    include = ["registry.terraform.io/wesleykirkland/urllo"]
+    include = ["registry.terraform.io/urllo/urllo"]
   }
 
   direct {
-    exclude = ["registry.terraform.io/wesleykirkland/urllo"]
+    exclude = ["registry.terraform.io/urllo/urllo"]
   }
 }

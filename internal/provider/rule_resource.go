@@ -1,4 +1,4 @@
-// Copyright Wesley Kirkland-Daily 2026
+// Copyright 2026 EasyRedir Inc.
 // SPDX-License-Identifier: MPL-2.0
 
 package provider
@@ -24,7 +24,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	"github.com/wesleykirkland/terraform-provider-urllo/internal/client"
+	"github.com/urllo/terraform-provider-urllo/internal/client"
 )
 
 const defaultValidateDNSTimeout = "5m"
@@ -81,7 +81,7 @@ func (r *RuleResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			},
 			"source_urls": schema.SetAttribute{
 				MarkdownDescription: "URLs to redirect from, e.g. `example.com` or `example.com/path`. " +
-					"Urllo silently appends a trailing `/` to any bare-domain entry with no path (e.g. " +
+					"urllo silently appends a trailing `/` to any bare-domain entry with no path (e.g. " +
 					"`example.com` becomes `example.com/`); write those entries with the trailing slash " +
 					"already, or Terraform will see a permanent diff against what the API stores. URLs " +
 					"that already have a path (e.g. `example.com/promo`) are left as-is.",
@@ -93,7 +93,7 @@ func (r *RuleResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				},
 			},
 			"target_url": schema.StringAttribute{
-				MarkdownDescription: "URL to redirect to. As with `source_urls`, Urllo appends a trailing " +
+				MarkdownDescription: "URL to redirect to. As with `source_urls`, urllo appends a trailing " +
 					"`/` to a bare-domain value with no path (e.g. `https://example.com` becomes " +
 					"`https://example.com/`); write it with the trailing slash already so Terraform's plan " +
 					"matches what the API stores. A URL with an existing path (e.g. " +
@@ -128,7 +128,7 @@ func (r *RuleResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			},
 			"validate_dns": schema.BoolAttribute{
 				MarkdownDescription: "When `true` (default), after creating or changing the rule the provider " +
-					"resolves each source host locally and waits until its DNS records match the values Urllo " +
+					"resolves each source host locally and waits until its DNS records match the values urllo " +
 					"requires, similar to `aws_acm_certificate_validation`. Set to `false` to skip this check.",
 				Optional: true,
 				Computed: true,
@@ -145,7 +145,7 @@ func (r *RuleResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				},
 			},
 			"name": schema.StringAttribute{
-				MarkdownDescription: "Display name Urllo assigns to the rule.",
+				MarkdownDescription: "Display name urllo assigns to the rule.",
 				Computed:            true,
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
@@ -203,7 +203,7 @@ func (r *RuleResource) Create(ctx context.Context, req resource.CreateRequest, r
 		if delErr := r.client.DeleteRule(ctx, rule.ID); delErr != nil {
 			resp.Diagnostics.AddWarning("Error cleaning up rule after failed DNS validation",
 				fmt.Sprintf("Rule %q was created but failed DNS validation, and could not be automatically "+
-					"deleted: %s. Delete it manually via the Urllo dashboard or API before retrying.",
+					"deleted: %s. Delete it manually via the urllo dashboard or API before retrying.",
 					rule.ID, delErr))
 		}
 		return
@@ -313,7 +313,7 @@ func (r *RuleResource) applyRuleToModel(ctx context.Context, rule *client.Rule, 
 
 	// target_url and source_urls are Required (not Computed), so Terraform
 	// requires the post-apply value to exactly equal what was planned. The
-	// Urllo API normalizes both (e.g. appending a trailing slash to target_url,
+	// urllo API normalizes both (e.g. appending a trailing slash to target_url,
 	// reformatting source_urls), so echoing its response back here would
 	// violate that contract and fail with "Provider produced inconsistent
 	// result after apply". Only pull them from the API when the incoming model
@@ -354,7 +354,7 @@ func (r *RuleResource) maybeValidateDNS(ctx context.Context, data *RuleResourceM
 }
 
 // validateDNS resolves each distinct source hostname locally and waits until its
-// DNS matches the values Urllo requires, or the timeout elapses.
+// DNS matches the values urllo requires, or the timeout elapses.
 func (r *RuleResource) validateDNS(ctx context.Context, sourceURLs []string, timeout time.Duration, diags *diag.Diagnostics) {
 	hostnames := distinctHostnames(sourceURLs)
 	if len(hostnames) == 0 {
@@ -371,8 +371,8 @@ func (r *RuleResource) validateDNS(ctx context.Context, sourceURLs []string, tim
 		}
 		if host == nil {
 			diags.AddWarning("Skipping DNS validation",
-				fmt.Sprintf("No host named %q exists yet in Urllo, so its DNS could not be validated. "+
-					"Add the host in the Urllo dashboard, or set validate_dns = false.", hostname))
+				fmt.Sprintf("No host named %q exists yet in urllo, so its DNS could not be validated. "+
+					"Add the host in the urllo dashboard, or set validate_dns = false.", hostname))
 			continue
 		}
 
@@ -380,7 +380,7 @@ func (r *RuleResource) validateDNS(ctx context.Context, sourceURLs []string, tim
 		if lastReasons != nil {
 			diags.AddError("DNS validation timed out",
 				fmt.Sprintf("Host %q did not have valid DNS within %s:\n  - %s\n\n"+
-					"Configure the DNS records shown in the Urllo dashboard, or set validate_dns = false.",
+					"Configure the DNS records shown in the urllo dashboard, or set validate_dns = false.",
 					hostname, timeout, strings.Join(lastReasons, "\n  - ")))
 			return
 		}

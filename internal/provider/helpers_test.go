@@ -1,4 +1,4 @@
-// Copyright Wesley Kirkland-Daily 2026
+// Copyright 2026 EasyRedir Inc.
 // SPDX-License-Identifier: MPL-2.0
 
 package provider
@@ -12,7 +12,7 @@ import (
 )
 
 // Environment variables used to point acceptance tests at real, account-owned
-// DNS so the Urllo API accepts the created resources.
+// DNS so the urllo API accepts the created resources.
 const (
 	// envTestDomain is a domain the account controls (e.g. "unleashthe.cloud").
 	// Rule tests create redirects on unique subdomains of it.
@@ -33,7 +33,7 @@ func testAccDomain(t *testing.T) string {
 	t.Helper()
 	domain := os.Getenv(envTestDomain)
 	if domain == "" {
-		t.Skipf("%s must be set to a domain your Urllo account controls (e.g. unleashthe.cloud)", envTestDomain)
+		t.Skipf("%s must be set to a domain your urllo account controls (e.g. unleashthe.cloud)", envTestDomain)
 	}
 	return domain
 }

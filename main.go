@@ -1,4 +1,4 @@
-// Copyright Wesley Kirkland-Daily 2026
+// Copyright 2026 EasyRedir Inc.
 // SPDX-License-Identifier: MPL-2.0
 
 package main
@@ -10,7 +10,7 @@ import (
 	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
-	urlloprovider "github.com/wesleykirkland/terraform-provider-urllo/internal/provider"
+	urlloprovider "github.com/urllo/terraform-provider-urllo/internal/provider"
 )
 
 var (
@@ -43,7 +43,7 @@ func run(ctx context.Context, version string, args []string) error {
 	}
 
 	opts := providerserver.ServeOpts{
-		Address: "registry.terraform.io/wesleykirkland/urllo",
+		Address: "registry.terraform.io/urllo/urllo",
 		Debug:   *debug,
 	}
 

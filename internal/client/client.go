@@ -1,7 +1,7 @@
-// Copyright Wesley Kirkland-Daily 2026
+// Copyright 2026 EasyRedir Inc.
 // SPDX-License-Identifier: MPL-2.0
 
-// Package client is a small typed HTTP client for the Urllo redirection API
+// Package client is a small typed HTTP client for the urllo redirection API
 // (https://api.urllo.com/v1). It handles HTTP Basic authentication, retry with
 // backoff that honours the API rate limits, idempotency keys on writes, cursor
 // pagination, and typed error decoding.
@@ -23,8 +23,8 @@ import (
 	"github.com/hashicorp/go-uuid"
 )
 
-// DefaultBaseURL is the production Urllo API base URL. The published OpenAPI
-// document lists an easyredir.com server because Urllo is a whitelabel of that
+// DefaultBaseURL is the production urllo API base URL. The published OpenAPI
+// document lists an easyredir.com server because urllo is a whitelabel of that
 // service, but the live API is served from api.urllo.com.
 const DefaultBaseURL = "https://api.urllo.com/v1"
 
@@ -32,7 +32,7 @@ const DefaultBaseURL = "https://api.urllo.com/v1"
 // giving up. Rate-limited (429) and 5xx responses are retried.
 const defaultMaxRetries = 4
 
-// Client talks to the Urllo API.
+// Client talks to the urllo API.
 type Client struct {
 	baseURL    string
 	apiKey     string
@@ -96,7 +96,7 @@ func New(baseURL, apiKey, apiSecret string, opts ...Option) *Client {
 	return c
 }
 
-// APIError is a structured error returned by the Urllo API for a non-2xx
+// APIError is a structured error returned by the urllo API for a non-2xx
 // response. It decodes both the unauthorized and unprocessable-entity shapes.
 type APIError struct {
 	StatusCode int

@@ -9,7 +9,7 @@ resource "urllo_rule" "example" {
   tags = ["marketing", "migration"]
 
   # After create/update, wait until each source host's DNS resolves to the
-  # values Urllo requires (like aws_acm_certificate_validation). Set to false to
+  # values urllo requires (like aws_acm_certificate_validation). Set to false to
   # skip, e.g. before DNS has been cut over.
   validate_dns         = true
   validate_dns_timeout = "5m"

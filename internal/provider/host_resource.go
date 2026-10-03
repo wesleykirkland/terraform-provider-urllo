@@ -1,4 +1,4 @@
-// Copyright Wesley Kirkland-Daily 2026
+// Copyright 2026 EasyRedir Inc.
 // SPDX-License-Identifier: MPL-2.0
 
 package provider
@@ -21,7 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	"github.com/wesleykirkland/terraform-provider-urllo/internal/client"
+	"github.com/urllo/terraform-provider-urllo/internal/client"
 )
 
 var (
@@ -35,8 +35,8 @@ func NewHostResource() resource.Resource {
 	return &HostResource{}
 }
 
-// HostResource manages settings of an existing Urllo host. Hosts are provisioned
-// via DNS in the Urllo dashboard, so this resource adopts an existing host by
+// HostResource manages settings of an existing urllo host. Hosts are provisioned
+// via DNS in the urllo dashboard, so this resource adopts an existing host by
 // name and manages its writable settings. Destroying the resource only removes
 // it from Terraform state; the host itself is not deleted.
 type HostResource struct {
@@ -70,9 +70,9 @@ func (r *HostResource) Metadata(ctx context.Context, req resource.MetadataReques
 func (r *HostResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Manages the settings of an existing source host. Hosts are created by adding a " +
-			"domain in the Urllo dashboard and configuring DNS; this resource adopts a host by `name` and " +
+			"domain in the urllo dashboard and configuring DNS; this resource adopts a host by `name` and " +
 			"manages its writable settings. Destroying the resource removes it from Terraform state only — the " +
-			"host is not deleted from Urllo.",
+			"host is not deleted from urllo.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Host identifier.",
@@ -81,7 +81,7 @@ func (r *HostResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			},
 			"name": schema.StringAttribute{
 				MarkdownDescription: "The hostname to manage, e.g. `www.example.com`. The host must already " +
-					"exist in Urllo. Changing this adopts a different host.",
+					"exist in urllo. Changing this adopts a different host.",
 				Required:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},
@@ -94,7 +94,7 @@ func (r *HostResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			"custom_404_body": schema.StringAttribute{
 				MarkdownDescription: "Custom HTML response body served when no redirect matches, in effect only " +
 					"when `not_found_action.response_code` is `404`. Requires `not_found_action` to be configured " +
-					"(at least `response_code = 404`); it is not applied otherwise. Read back from Urllo on refresh, " +
+					"(at least `response_code = 404`); it is not applied otherwise. Read back from urllo on refresh, " +
 					"so content drift is detected like any other attribute; null when no custom body is set.",
 				Optional:      true,
 				Computed:      true,
@@ -209,7 +209,7 @@ func (r *HostResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			},
 			"dns_tested_at": schema.StringAttribute{
 				MarkdownDescription: "When the host's DNS was last tested. Null unless the provider's " +
-					"`include_dns_tested_at` is set to `true`: Urllo re-tests DNS on its own schedule, so by " +
+					"`include_dns_tested_at` is set to `true`: urllo re-tests DNS on its own schedule, so by " +
 					"default this is left out of state to avoid it showing as changed outside of Terraform on " +
 					"every refresh.",
 				Computed:      true,
@@ -259,7 +259,7 @@ func (r *HostResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 	if host == nil {
 		resp.Diagnostics.AddError("Host not found",
-			fmt.Sprintf("No host named %q exists in Urllo. Add the domain in the Urllo dashboard first.", data.Name.ValueString()))
+			fmt.Sprintf("No host named %q exists in urllo. Add the domain in the urllo dashboard first.", data.Name.ValueString()))
 		return
 	}
 
@@ -321,8 +321,8 @@ func (r *HostResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	// Hosts cannot be deleted through the API; they are provisioned via DNS.
 	// Removing the resource just drops it from state.
 	resp.Diagnostics.AddWarning("Host not deleted",
-		"The Urllo API does not support deleting hosts. The host has been removed from Terraform state only; "+
-			"it still exists in Urllo. Remove the domain from the Urllo dashboard to delete it.")
+		"The urllo API does not support deleting hosts. The host has been removed from Terraform state only; "+
+			"it still exists in urllo. Remove the domain from the urllo dashboard to delete it.")
 }
 
 func (r *HostResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

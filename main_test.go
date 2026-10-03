@@ -1,4 +1,4 @@
-// Copyright Wesley Kirkland-Daily 2026
+// Copyright 2026 EasyRedir Inc.
 // SPDX-License-Identifier: MPL-2.0
 
 package main
@@ -33,7 +33,7 @@ func TestRunServesProvider(t *testing.T) {
 	if err := run(context.Background(), "test", []string{"-debug"}); err != nil {
 		t.Fatalf("run: %v", err)
 	}
-	if gotAddr != "registry.terraform.io/wesleykirkland/urllo" {
+	if gotAddr != "registry.terraform.io/urllo/urllo" {
 		t.Errorf("address = %q", gotAddr)
 	}
 

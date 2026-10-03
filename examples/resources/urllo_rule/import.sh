@@ -1,2 +1,2 @@
-# Rules are imported by their Urllo rule ID.
+# Rules are imported by their urllo rule ID.
 terraform import urllo_rule.example abc-def

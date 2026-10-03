@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-# Copyright Wesley Kirkland-Daily 2026
+# Copyright 2026 EasyRedir Inc.
 # SPDX-License-Identifier: MPL-2.0
 
 """Fails if any line added on this branch (relative to main) in a non-test
 Go file isn't covered by the tests exercised in coverage.out -- unless it's
 explicitly marked as an unreachable defensive guard.
 
-This approximates SonarCloud's "Coverage on New Code" quality gate locally,
-in `make cover-new` / the pre-commit hook, so a gap like rule_types.go
-shipping at 30% new-code coverage gets caught before it ever reaches a
-Sonar report. See AGENTS.md for the coverage policy this enforces.
+Runs in `make cover-new` / the pre-commit hook, so a gap like rule_types.go
+shipping at 30% new-code coverage gets caught before commit. See AGENTS.md
+for the coverage policy this enforces.
 
 Not all Go statements in this codebase CAN be covered: COVERAGE.md documents
 a handful of defensive guards (e.g. a schema-decode failure the framework

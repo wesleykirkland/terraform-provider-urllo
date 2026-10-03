@@ -1,4 +1,4 @@
-// Copyright Wesley Kirkland-Daily 2026
+// Copyright 2026 EasyRedir Inc.
 // SPDX-License-Identifier: MPL-2.0
 
 package provider
@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/wesleykirkland/terraform-provider-urllo/internal/client"
+	"github.com/urllo/terraform-provider-urllo/internal/client"
 )
 
 // Environment variables used as fallbacks for provider configuration.
@@ -33,7 +33,7 @@ const (
 // Ensure UrlloProvider satisfies the provider interface.
 var _ provider.Provider = &UrlloProvider{}
 
-// UrlloProvider is the Urllo Terraform provider.
+// UrlloProvider is the urllo Terraform provider.
 type UrlloProvider struct {
 	// version is set to the provider version on release, "dev" when built and
 	// run locally, and "test" during acceptance testing.
@@ -55,28 +55,28 @@ func (p *UrlloProvider) Metadata(ctx context.Context, req provider.MetadataReque
 
 func (p *UrlloProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "The Urllo provider manages redirect rules and source hosts in the " +
-			"[Urllo](https://urllo.com) redirection service.",
+		MarkdownDescription: "The urllo provider manages redirect rules and source hosts in the " +
+			"[urllo](https://urllo.com) redirection service.",
 		Attributes: map[string]schema.Attribute{
 			"api_key": schema.StringAttribute{
-				MarkdownDescription: "Urllo API key (HTTP Basic username). May also be set with the `" +
+				MarkdownDescription: "urllo API key (HTTP Basic username). May also be set with the `" +
 					envAPIKey + envVarSuffixMD,
 				Optional: true,
 			},
 			"api_secret": schema.StringAttribute{
-				MarkdownDescription: "Urllo API secret (HTTP Basic password). May also be set with the `" +
+				MarkdownDescription: "urllo API secret (HTTP Basic password). May also be set with the `" +
 					envAPISecret + envVarSuffixMD,
 				Optional:  true,
 				Sensitive: true,
 			},
 			"endpoint": schema.StringAttribute{
-				MarkdownDescription: "Base URL for the Urllo API. Defaults to `" + client.DefaultBaseURL +
+				MarkdownDescription: "Base URL for the urllo API. Defaults to `" + client.DefaultBaseURL +
 					"`. May also be set with the `" + envEndpoint + envVarSuffixMD,
 				Optional: true,
 			},
 			"include_dns_tested_at": schema.BoolAttribute{
 				MarkdownDescription: "Whether `urllo_host`'s `dns_tested_at` attribute is populated from the API. " +
-					"Defaults to `false`: Urllo re-tests DNS on its own schedule, so this timestamp changes " +
+					"Defaults to `false`: urllo re-tests DNS on its own schedule, so this timestamp changes " +
 					"independently of any Terraform-managed configuration, and surfacing it causes `dns_tested_at` " +
 					"to show as changed outside of Terraform on every refresh even though nothing actionable " +
 					"changed. Set to `true` to opt back in and have it populated.",
@@ -95,11 +95,11 @@ func (p *UrlloProvider) Configure(ctx context.Context, req provider.ConfigureReq
 
 	// Values that are still unknown at plan time cannot be resolved yet.
 	if data.APIKey.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(path.Root("api_key"), "Unknown Urllo API key",
+		resp.Diagnostics.AddAttributeError(path.Root("api_key"), "Unknown urllo API key",
 			"The api_key value is unknown. Set a static value or the "+envAPIKey+envVarSuffix)
 	}
 	if data.APISecret.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(path.Root("api_secret"), "Unknown Urllo API secret",
+		resp.Diagnostics.AddAttributeError(path.Root("api_secret"), "Unknown urllo API secret",
 			"The api_secret value is unknown. Set a static value or the "+envAPISecret+envVarSuffix)
 	}
 	if resp.Diagnostics.HasError() {
@@ -113,11 +113,11 @@ func (p *UrlloProvider) Configure(ctx context.Context, req provider.ConfigureReq
 	endpoint := firstNonEmpty(data.Endpoint.ValueString(), os.Getenv(envEndpoint), client.DefaultBaseURL)
 
 	if apiKey == "" {
-		resp.Diagnostics.AddAttributeError(path.Root("api_key"), "Missing Urllo API key",
+		resp.Diagnostics.AddAttributeError(path.Root("api_key"), "Missing urllo API key",
 			"Set the api_key provider attribute or the "+envAPIKey+envVarSuffix)
 	}
 	if apiSecret == "" {
-		resp.Diagnostics.AddAttributeError(path.Root("api_secret"), "Missing Urllo API secret",
+		resp.Diagnostics.AddAttributeError(path.Root("api_secret"), "Missing urllo API secret",
 			"Set the api_secret provider attribute or the "+envAPISecret+envVarSuffix)
 	}
 	if resp.Diagnostics.HasError() {

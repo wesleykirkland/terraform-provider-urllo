@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright Wesley Kirkland-Daily 2026
+# Copyright 2026 EasyRedir Inc.
 # SPDX-License-Identifier: MPL-2.0
 
 """Unit tests for check_new_code_coverage.py.
@@ -61,10 +61,10 @@ index 4444444..0000000
 
 PROFILE_TEXT = """\
 mode: set
-github.com/wesleykirkland/terraform-provider-urllo/internal/provider/rule_types.go:51.93,52.14 1 1
-github.com/wesleykirkland/terraform-provider-urllo/internal/provider/rule_types.go:52.14,54.3 1 0
-github.com/wesleykirkland/terraform-provider-urllo/internal/provider/rule_types.go:55.2,61.12 3 0
-github.com/wesleykirkland/terraform-provider-urllo/internal/provider/rule_types.go:64.96,69.35 4 1
+github.com/urllo/terraform-provider-urllo/internal/provider/rule_types.go:51.93,52.14 1 1
+github.com/urllo/terraform-provider-urllo/internal/provider/rule_types.go:52.14,54.3 1 0
+github.com/urllo/terraform-provider-urllo/internal/provider/rule_types.go:55.2,61.12 3 0
+github.com/urllo/terraform-provider-urllo/internal/provider/rule_types.go:64.96,69.35 4 1
 """
 
 
@@ -99,7 +99,7 @@ class ParseAddedLinesTest(unittest.TestCase):
 class ParseCoverageProfileTest(unittest.TestCase):
     def test_parses_blocks_and_skips_mode_header(self) -> None:
         blocks = c.parse_coverage_profile(PROFILE_TEXT)
-        key = "github.com/wesleykirkland/terraform-provider-urllo/internal/provider/rule_types.go"
+        key = "github.com/urllo/terraform-provider-urllo/internal/provider/rule_types.go"
         self.assertIn(key, blocks)
         self.assertEqual(len(blocks[key]), 4)
         self.assertIn((55, 61, 0), blocks[key])

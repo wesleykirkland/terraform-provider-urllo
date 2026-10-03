@@ -7,11 +7,10 @@ default: hooks fmt lint install generate
 
 # Points git at .githooks/ (pre-commit runs gofmt/lint/test/check-docs) so the
 # hook is active without the user ever running `git config` or an install
-# script themselves. This re-applies on every `make` invocation -- the same
-# self-install trick husky uses via npm's "prepare" script, just triggered by
-# `make` instead of `npm install` since that's this repo's equivalent entry
-# point. `git config` here is a cheap, idempotent, repo-local write (like
-# ~/.gitconfig, scoped to .git/config in this clone), not a destructive one.
+# script themselves. This re-applies on every `make` invocation, since `make`
+# is this repo's entry point. `git config` here is a cheap, idempotent,
+# repo-local write (like ~/.gitconfig, scoped to .git/config in this clone),
+# not a destructive one.
 HOOKS_DIR := .githooks
 
 hooks:
@@ -69,8 +68,8 @@ test-py: hooks
 	$(PYTHON) scripts/run_python_tests.py
 
 # Warns (never fails, here or in CI -- see the "api-spec-drift" job) when the
-# live Urllo OpenAPI spec has moved past the version recorded in
-# API_SPEC_VERSION. Urllo doesn't publish an API changelog, so this is the
+# live urllo OpenAPI spec has moved past the version recorded in
+# API_SPEC_VERSION. urllo doesn't publish an API changelog, so this is the
 # only drift signal available. See scripts/check_api_spec_version.py.
 check-api-spec: hooks
 	$(PYTHON) scripts/check_api_spec_version.py
@@ -88,9 +87,8 @@ cover: hooks
 
 # cover-new is the repo-wide floor's sibling: it fails if any line *added on
 # this branch relative to main* isn't covered, catching gaps a small new file
-# can hide from the aggregate COVER_MIN check above (see AGENTS.md).
-# Approximates SonarCloud's "Coverage on New Code" gate locally. Shares the
-# same COVER_MIN variable as `cover` above -- override per-invocation (e.g.
+# can hide from the aggregate COVER_MIN check above (see AGENTS.md). Shares
+# the same COVER_MIN variable as `cover` above -- override per-invocation (e.g.
 # `make cover-new COVER_MIN=100`) for a stricter local check.
 # See scripts/check_new_code_coverage.py.
 cover-new: hooks

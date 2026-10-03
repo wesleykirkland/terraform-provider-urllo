@@ -10,7 +10,7 @@
 # so it must be an absolute path.
 provider_installation {
   dev_overrides {
-    "registry.terraform.io/wesleykirkland/urllo" = "/Users/CHANGE_ME/go/bin"
+    "registry.terraform.io/urllo/urllo" = "/Users/CHANGE_ME/go/bin"
   }
 
   # For all other providers, install as usual.

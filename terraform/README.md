@@ -1,4 +1,4 @@
-# Running the Urllo provider from a local build
+# Running the urllo provider from a local build
 
 This directory builds the provider from source and runs it with Terraform
 **without publishing it to a registry**. There are two ways to do that; pick
@@ -62,7 +62,7 @@ For a quick edit-build-run loop where you don't want to reinstall into a mirror:
 ```shell
 go install .                                   # from the repo root
 cd terraform
-printf 'provider_installation {\n  dev_overrides {\n    "registry.terraform.io/wesleykirkland/urllo" = "%s/bin"\n  }\n  direct {}\n}\n' "$(go env GOPATH)" > dev.tfrc
+printf 'provider_installation {\n  dev_overrides {\n    "registry.terraform.io/urllo/urllo" = "%s/bin"\n  }\n  direct {}\n}\n' "$(go env GOPATH)" > dev.tfrc
 
 # Do NOT run `terraform init` with a dev override in effect.
 TF_CLI_CONFIG_FILE=./dev.tfrc terraform validate
@@ -90,5 +90,5 @@ and `mirror.tfrc.example` are committed templates.
 - `outputs.tf` — prints host names, rule count, the custom-404 drift check,
   the full `example3` rule, and its past-week request count.
 
-Running `terraform apply` here manages real resources against your Urllo
+Running `terraform apply` here manages real resources against your urllo
 account; run `terraform destroy` when you're done experimenting.

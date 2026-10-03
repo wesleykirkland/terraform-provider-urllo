@@ -5,8 +5,7 @@
 This repo enforces coverage at two levels, both reading their threshold from
 the same `COVER_MIN` variable (`GNUmakefile`, default **97%**). Both are
 checked locally (`.githooks/pre-commit`, installed automatically by any
-`make` target) and in CI (`test.yml`'s `unit` job) -- a gap doesn't get to
-wait for a SonarCloud report to surface.
+`make` target) and in CI (`test.yml`'s `unit` job).
 
 1. **Repo-wide floor** (`make cover`): total statement coverage across the
    whole Go codebase. See [COVERAGE.md](COVERAGE.md) for the full breakdown
@@ -19,10 +18,9 @@ wait for a SonarCloud report to surface.
    completely untested function without moving the repo-wide aggregate
    number at all -- that's exactly what happened with
    `internal/provider/rule_types.go`'s `analyticsToObject`, which shipped at
-   30% new-code coverage and only got caught by SonarCloud's PR gate, after
-   the fact. `make cover-new` (`scripts/check_new_code_coverage.py`)
-   approximates that same "coverage on new code" check locally, so the gap
-   is caught before you commit rather than after a Sonar report comes back.
+   30% new-code coverage. `make cover-new`
+   (`scripts/check_new_code_coverage.py`) checks coverage of just the new
+   lines, so the gap is caught before you commit.
 
 Since both read `COVER_MIN`, override it per-invocation for a stricter local
 check on new code specifically, e.g. `make cover-new COVER_MIN=100` --
@@ -46,6 +44,6 @@ exemption -- an unmarked gap always fails the check.
 
 Both `make cover` and `make cover-new` run the mock-backed acceptance tests
 (`TestAccMock*`), which need no credentials -- only the *real* (non-mock)
-acceptance tests (`TestAccRuleResource`, etc.) require Urllo credentials, and
+acceptance tests (`TestAccRuleResource`, etc.) require urllo credentials, and
 those self-skip without them. So both coverage gates run the same in CI and
 locally.

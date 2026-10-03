@@ -1,4 +1,4 @@
-# Hosts are provisioned by adding a domain in the Urllo dashboard and configuring
+# Hosts are provisioned by adding a domain in the urllo dashboard and configuring
 # DNS. This resource adopts an existing host by name and manages its settings.
 # Destroying it removes the resource from state only; the host is not deleted.
 resource "urllo_host" "example" {
@@ -27,7 +27,7 @@ resource "urllo_host" "example" {
   }
 }
 
-# Serves a custom body instead of Urllo's default page when no redirect rule
+# Serves a custom body instead of urllo's default page when no redirect rule
 # matches. custom_404_body only takes effect when not_found_action.response_code
 # is 404. not_found_action and security are independent settings applicable to
 # both host configurations on this page — they're split across these two

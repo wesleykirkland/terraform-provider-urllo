@@ -24,7 +24,7 @@ resource "urllo_rule" "example" {
   tags = ["marketing", "migration"]
 
   # After create/update, wait until each source host's DNS resolves to the
-  # values Urllo requires (like aws_acm_certificate_validation). Set to false to
+  # values urllo requires (like aws_acm_certificate_validation). Set to false to
   # skip, e.g. before DNS has been cut over.
   validate_dns         = true
   validate_dns_timeout = "5m"
@@ -36,8 +36,8 @@ resource "urllo_rule" "example" {
 
 ### Required
 
-- `source_urls` (Set of String) URLs to redirect from, e.g. `example.com` or `example.com/path`. Urllo silently appends a trailing `/` to any bare-domain entry with no path (e.g. `example.com` becomes `example.com/`); write those entries with the trailing slash already, or Terraform will see a permanent diff against what the API stores. URLs that already have a path (e.g. `example.com/promo`) are left as-is.
-- `target_url` (String) URL to redirect to. As with `source_urls`, Urllo appends a trailing `/` to a bare-domain value with no path (e.g. `https://example.com` becomes `https://example.com/`); write it with the trailing slash already so Terraform's plan matches what the API stores. A URL with an existing path (e.g. `https://example.com/promo`) is left as-is.
+- `source_urls` (Set of String) URLs to redirect from, e.g. `example.com` or `example.com/path`. urllo silently appends a trailing `/` to any bare-domain entry with no path (e.g. `example.com` becomes `example.com/`); write those entries with the trailing slash already, or Terraform will see a permanent diff against what the API stores. URLs that already have a path (e.g. `example.com/promo`) are left as-is.
+- `target_url` (String) URL to redirect to. As with `source_urls`, urllo appends a trailing `/` to a bare-domain value with no path (e.g. `https://example.com` becomes `https://example.com/`); write it with the trailing slash already so Terraform's plan matches what the API stores. A URL with an existing path (e.g. `https://example.com/promo`) is left as-is.
 
 ### Optional
 
@@ -45,7 +45,7 @@ resource "urllo_rule" "example" {
 - `forward_path` (Boolean) Whether the request path is forwarded to the target URL.
 - `response_type` (String) Redirect type: `moved_permanently` (301) or `found` (302).
 - `tags` (Set of String) Tags associated with the rule.
-- `validate_dns` (Boolean) When `true` (default), after creating or changing the rule the provider resolves each source host locally and waits until its DNS records match the values Urllo requires, similar to `aws_acm_certificate_validation`. Set to `false` to skip this check.
+- `validate_dns` (Boolean) When `true` (default), after creating or changing the rule the provider resolves each source host locally and waits until its DNS records match the values urllo requires, similar to `aws_acm_certificate_validation`. Set to `false` to skip this check.
 - `validate_dns_timeout` (String) How long to wait for DNS to validate, as a Go duration (default `5m`). Only used when `validate_dns` is `true`.
 
 ### Read-Only
@@ -53,7 +53,7 @@ resource "urllo_rule" "example" {
 - `certificate_status` (String) Certificate status of the rule's source host.
 - `dns_status` (String) DNS configuration status of the rule's source host.
 - `id` (String) Rule identifier.
-- `name` (String) Display name Urllo assigns to the rule.
+- `name` (String) Display name urllo assigns to the rule.
 
 ## Import
 
@@ -62,6 +62,6 @@ Import is supported using the following syntax:
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
-# Rules are imported by their Urllo rule ID.
+# Rules are imported by their urllo rule ID.
 terraform import urllo_rule.example abc-def
 ```
